@@ -8,6 +8,10 @@ import com.merchpulse.shared.mvi.UiState
 
 // ─── Product List ───────────────────────────────────────────
 
+enum class AuditReason {
+    RESTOCK, CORRECTION, DAMAGED, RETURN
+}
+
 data class ProductsState(
     val products: List<Product> = emptyList(),
     val isLoading: Boolean = false,
@@ -47,7 +51,9 @@ data class ProductFormState(
     val lowStockThreshold: String = "5",
     val isEditing: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val auditReason: AuditReason = AuditReason.RESTOCK,
+    val adjustmentNote: String = ""
 ) : UiState
 
 sealed class ProductFormIntent : UiIntent {
@@ -61,6 +67,10 @@ sealed class ProductFormIntent : UiIntent {
     data class CostChanged(val cost: String) : ProductFormIntent()
     data class StockQtyChanged(val qty: String) : ProductFormIntent()
     data class ThresholdChanged(val threshold: String) : ProductFormIntent()
+    data object IncrementStock : ProductFormIntent()
+    data object DecrementStock : ProductFormIntent()
+    data class AuditReasonChanged(val reason: AuditReason) : ProductFormIntent()
+    data class AdjustmentNoteChanged(val note: String) : ProductFormIntent()
     data object Save : ProductFormIntent()
 }
 

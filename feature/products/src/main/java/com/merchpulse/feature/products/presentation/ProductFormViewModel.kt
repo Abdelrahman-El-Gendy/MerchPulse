@@ -42,6 +42,10 @@ class ProductFormViewModel(
             is ProductFormIntent.CostChanged -> _state.update { it.copy(cost = intent.cost) }
             is ProductFormIntent.StockQtyChanged -> _state.update { it.copy(stockQty = intent.qty) }
             is ProductFormIntent.ThresholdChanged -> _state.update { it.copy(lowStockThreshold = intent.threshold) }
+            is ProductFormIntent.IncrementStock -> _state.update { it.copy(stockQty = (it.stockQty.toIntOrNull() ?: 0).plus(1).toString()) }
+            is ProductFormIntent.DecrementStock -> _state.update { it.copy(stockQty = (it.stockQty.toIntOrNull() ?: 0).minus(1).coerceAtLeast(0).toString()) }
+            is ProductFormIntent.AuditReasonChanged -> _state.update { it.copy(auditReason = intent.reason) }
+            is ProductFormIntent.AdjustmentNoteChanged -> _state.update { it.copy(adjustmentNote = intent.note) }
             is ProductFormIntent.Save -> saveProduct()
         }
     }
@@ -100,11 +104,12 @@ class ProductFormViewModel(
                 
                 if (result.isSuccess) {
                     auditRepository.logAction(
-                        action = if (s.isEditing) "PRODUCT_UPDATE" else "PRODUCT_CREATE",
+                        action = if (s.isEditing) "PRODUCT_UPDATE_${s.auditReason.name}" else "PRODUCT_CREATE",
                         entityType = "PRODUCT",
                         entityId = p.id,
                         previousState = s.product?.toString(),
-                        newState = p.toString()
+                        newState = p.toString(),
+                        note = if (s.isEditing) s.adjustmentNote else null
                     )
                     _effect.send(ProductFormEffect.ShowSuccess("Product saved"))
                     _effect.send(ProductFormEffect.NavigateBack)
