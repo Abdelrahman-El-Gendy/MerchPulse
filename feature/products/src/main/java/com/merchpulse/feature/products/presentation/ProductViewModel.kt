@@ -54,12 +54,26 @@ class ProductViewModel(
         withContext(dispatcherProvider.main) { _state.value = _state.value.copy(isLoading = true) }
         try {
             repository.getAllProducts().collect { list ->
-                // Apply filters if needed locally or re-query
-                val filtered = if (_state.value.showLowStockOnly) {
-                    list.filter { it.stockQty <= it.lowStockThreshold }
-                } else {
-                    list
+                var filtered = list
+                
+                // Search filter
+                if (_state.value.searchQuery.isNotEmpty()) {
+                    filtered = filtered.filter { 
+                        it.name.contains(_state.value.searchQuery, ignoreCase = true) ||
+                        it.sku.contains(_state.value.searchQuery, ignoreCase = true)
+                    }
                 }
+                
+                // Status filter
+                if (_state.value.statusFilter != null) {
+                    filtered = filtered.filter { it.status == _state.value.statusFilter }
+                }
+                
+                // Low stock filter
+                if (_state.value.showLowStockOnly) {
+                    filtered = filtered.filter { it.stockQty <= it.lowStockThreshold }
+                }
+                
                 withContext(dispatcherProvider.main) {
                     _state.value = _state.value.copy(products = filtered, isLoading = false)
                 }
@@ -78,13 +92,10 @@ class ProductViewModel(
     }
     
     private suspend fun searchProducts(query: String) {
-        // Debounce could be added here
-        withContext(dispatcherProvider.main) { _state.value = _state.value.copy(isLoading = true) }
-        repository.searchProducts(query).collect { list ->
-            withContext(dispatcherProvider.main) {
-                 _state.value = _state.value.copy(products = list, isLoading = false)
-            }
+        withContext(dispatcherProvider.main) { 
+            _state.value = _state.value.copy(searchQuery = query)
         }
+        loadProducts()
     }
     
     private suspend fun deleteProduct(id: String) {
