@@ -29,8 +29,13 @@ fun MerchPulseMainScaffold(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on auth screens
-    val showBottomBar = currentRoute !in listOf(Screen.SignIn.route, Screen.SignUp.route)
+    // Hide bottom bar on auth and detail/form screens
+    val showBottomBar = currentRoute !in listOf(
+        Screen.SignIn.route, 
+        Screen.SignUp.route,
+        Screen.ProductForm.route,
+        Screen.LowStock.route
+    )
 
     val darkBg = Color(0xFF0D121F)
 
