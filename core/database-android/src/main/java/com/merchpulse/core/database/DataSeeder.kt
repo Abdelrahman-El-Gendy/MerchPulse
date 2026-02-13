@@ -15,6 +15,7 @@ class DataSeeder(
         val admin = Employee(
             id = "admin-1",
             email = "admin@merchpulse.com",
+            phoneNumber = "1234567890",
             fullName = "System Admin",
             role = Role.ADMIN,
             permissions = Permission.entries.toSet(),
@@ -27,6 +28,7 @@ class DataSeeder(
         val alex = Employee(
             id = "alex-1",
             email = "alex.rivera@merchpulse.com",
+            phoneNumber = "9876543210",
             fullName = "Alex Rivera",
             role = Role.STAFF,
             permissions = setOf(Permission.PRODUCT_VIEW, Permission.PUNCH_SELF),

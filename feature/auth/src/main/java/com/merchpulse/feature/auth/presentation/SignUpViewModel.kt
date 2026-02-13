@@ -34,9 +34,13 @@ class SignUpViewModel(
     fun handleIntent(intent: SignUpIntent) {
         when (intent) {
             is SignUpIntent.FullNameChanged -> _state.value = _state.value.copy(fullName = intent.name)
+            is SignUpIntent.PhoneNumberChanged -> _state.value = _state.value.copy(phoneNumber = intent.phone)
+            is SignUpIntent.CountryCodeChanged -> _state.value = _state.value.copy(countryCode = intent.code)
             is SignUpIntent.EmailChanged -> _state.value = _state.value.copy(email = intent.email)
             is SignUpIntent.PinChanged -> _state.value = _state.value.copy(pin = intent.pin)
             is SignUpIntent.ConfirmPinChanged -> _state.value = _state.value.copy(confirmPin = intent.pin)
+            is SignUpIntent.RoleChanged -> _state.value = _state.value.copy(selectedRole = intent.role)
+            is SignUpIntent.TermsToggled -> _state.value = _state.value.copy(isTermsAccepted = intent.accepted)
             is SignUpIntent.Submit -> signUp()
         }
     }
@@ -45,12 +49,16 @@ class SignUpViewModel(
         viewModelScope.launch(dispatcherProvider.io) {
             val s = _state.value
 
-            if (s.fullName.isBlank() || s.email.isBlank() || s.pin.isBlank()) {
-                _state.value = s.copy(error = "All fields are required")
+            if (s.fullName.isBlank() || s.phoneNumber.isBlank() || s.pin.isBlank()) {
+                _state.value = s.copy(error = "Full Name, Phone, and Password are required")
                 return@launch
             }
-            if (s.pin != s.confirmPin) {
-                _state.value = s.copy(error = "PINs do not match")
+            if (!s.isTermsAccepted) {
+                _state.value = s.copy(error = "You must agree to the Terms & Conditions")
+                return@launch
+            }
+            if (s.pin.length < 4) { // Basic validation
+                _state.value = s.copy(error = "Password must be at least 4 characters")
                 return@launch
             }
 
@@ -59,10 +67,15 @@ class SignUpViewModel(
             val newEmployee = Employee(
                 id = UUID.randomUUID().toString(),
                 email = s.email.trim(),
+                phoneNumber = s.phoneNumber.trim(),
                 fullName = s.fullName.trim(),
-                role = Role.STAFF,
-                permissions = setOf(Permission.PUNCH_SELF, Permission.PRODUCT_VIEW),
-                isActive = true,
+                role = s.selectedRole,
+                permissions = if (s.selectedRole == Role.MANAGER) {
+                    Permission.entries.toSet() 
+                } else {
+                    setOf(Permission.PUNCH_SELF, Permission.PRODUCT_VIEW)
+                },
+                isActive = false, // Design says "Requires Approval"
                 joinedAt = Clock.System.now()
             )
 

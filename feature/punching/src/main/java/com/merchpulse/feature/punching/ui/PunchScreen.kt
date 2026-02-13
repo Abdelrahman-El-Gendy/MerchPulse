@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.background
@@ -80,198 +82,280 @@ fun PunchScreen(
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 100f)
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(darkBg)
-            .padding(horizontal = 24.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    state.employeeRole,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.Gray
-                )
-                Text(
-                    state.employeeName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = {}) {
-                    Icon(Icons.Default.Notifications, "Notifications", tint = Color.White.copy(alpha = 0.7f))
-                }
-                Spacer(Modifier.width(8.dp))
-                Canvas(modifier = Modifier.size(40.dp)) {
-                    drawCircle(Color.Gray) // Placeholder for avatar
-                }
-            }
+    val scrollState = rememberLazyListState()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    
+    val firstItemOffset = remember { derivedStateOf { 
+        if (scrollState.layoutInfo.visibleItemsInfo.isEmpty()) 0f
+        else -scrollState.layoutInfo.visibleItemsInfo[0].offset.toFloat()
+    } }
+    
+    val firstItemIndex = remember { derivedStateOf { scrollState.firstVisibleItemIndex } }
+    
+    // Parallax and fade calculations (for items inside the list)
+    val headerAlpha by remember {
+        derivedStateOf {
+            if (firstItemIndex.value > 0) 0f
+            else (1f - (firstItemOffset.value / 600f)).coerceIn(0f, 1f)
         }
+    }
 
-        Spacer(Modifier.height(24.dp))
-
-        // Date and Digital Clock
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+    Scaffold(
+        containerColor = darkBg,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { padding ->
+        LazyColumn(
+            state = scrollState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = scaffoldPadding.calculateBottomPadding() + 24.dp)
         ) {
-            Text(
-                "${currentTime.dayOfWeek.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }}, ${currentTime.month.name.lowercase().take(3).replaceFirstChar { it.titlecase(Locale.getDefault()) }} ${currentTime.dayOfMonth}",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
-            )
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    formatTime(currentTime),
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    if (currentTime.hour >= 12) " PM" else " AM",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // Circular Punch Button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(240.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Pulse background
-            if (isPunchedIn) {
-                Canvas(modifier = Modifier.size(240.dp)) {
-                    drawCircle(color = buttonColor.copy(alpha = pulseAlpha))
-                }
-            }
-
-            // outer glow rings
-            repeat(3) { i ->
-                Canvas(modifier = Modifier.size(180.dp + (i * 30).dp)) {
-                    drawCircle(
-                        color = accentBlue.copy(alpha = 0.05f),
-                        style = Stroke(width = 1.dp.toPx())
-                    )
-                }
-            }
-
-            Surface(
-                onClick = {
-                    val nextType = if (isPunchedIn) PunchType.OUT else PunchType.IN
-                    viewModel.handleIntent(PunchIntent.RecordPunch(nextType))
-                },
-                modifier = Modifier.size(160.dp * buttonScale),
-                shape = CircleShape,
-                color = darkBg,
-                border = BorderStroke(2.dp, buttonColor.copy(alpha = 0.5f)),
-                shadowElevation = 8.dp
-            ) {
+            // 1. Background Content (now as Items for interactivity)
+            item {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Fingerprint,
-                        null,
-                        tint = buttonColor,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        if (isPunchedIn) "PUNCH OUT" else "PUNCH IN",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        if (isPunchedIn) "Shift Active" else "Not Started",
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-            
-            // Active indicator dot on the ring
-            if (isPunchedIn) {
-                Box(
                     modifier = Modifier
-                        .size(165.dp)
-                        .rotate(-45f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .graphicsLayer {
+                            // Achieve parallax by counter-scrolling slightly
+                            translationY = firstItemOffset.value * 0.4f
+                            alpha = headerAlpha
+                        }
                 ) {
+                    // Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                state.employeeRole,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Color.Gray
+                            )
+                            Text(
+                                state.employeeName,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {}) {
+                                Icon(Icons.Default.Notifications, "Notifications", tint = Color.White.copy(alpha = 0.7f))
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(Color.Gray.copy(alpha = 0.3f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(state.employeeName.take(1), color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Date and Digital Clock
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "${currentTime.dayOfWeek.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }}, ${currentTime.month.name.lowercase().take(3).replaceFirstChar { it.titlecase(Locale.getDefault()) }} ${currentTime.dayOfMonth}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Gray
+                        )
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                formatTime(currentTime),
+                                style = MaterialTheme.typography.displayLarge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                if (currentTime.hour >= 12) " PM" else " AM",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Circular Punch Button
                     Box(
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .size(8.dp)
-                            .background(statusGreen, CircleShape)
-                            .shadow(4.dp, CircleShape, ambientColor = statusGreen, spotColor = statusGreen)
-                    )
+                            .fillMaxWidth()
+                            .height(240.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Pulse background
+                        if (isPunchedIn) {
+                            Canvas(modifier = Modifier.size(240.dp)) {
+                                drawCircle(color = buttonColor.copy(alpha = pulseAlpha))
+                            }
+                        }
+
+                        // outer glow rings
+                        repeat(3) { i ->
+                            Canvas(modifier = Modifier.size(180.dp + (i * 30).dp)) {
+                                drawCircle(
+                                    color = accentBlue.copy(alpha = 0.05f),
+                                    style = Stroke(width = 1.dp.toPx())
+                                )
+                            }
+                        }
+
+                        Surface(
+                            onClick = {
+                                val nextType = if (isPunchedIn) PunchType.OUT else PunchType.IN
+                                viewModel.handleIntent(PunchIntent.RecordPunch(nextType))
+                            },
+                            modifier = Modifier.size(160.dp * buttonScale),
+                            shape = CircleShape,
+                            color = darkBg,
+                            border = BorderStroke(2.dp, buttonColor.copy(alpha = 0.5f)),
+                            shadowElevation = 8.dp
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Fingerprint,
+                                    null,
+                                    tint = buttonColor,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    if (isPunchedIn) "PUNCH OUT" else "PUNCH IN",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    if (isPunchedIn) "Shift Active" else "Not Started",
+                                    color = Color.Gray,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                        
+                        // Active indicator dot on the ring
+                        if (isPunchedIn) {
+                            Box(
+                                modifier = Modifier
+                                    .size(165.dp)
+                                    .rotate(-45f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .size(8.dp)
+                                        .background(statusGreen, CircleShape)
+                                        .shadow(4.dp, CircleShape, ambientColor = statusGreen, spotColor = statusGreen)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(32.dp))
+
+                    // Stats Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Timer,
+                            label = "SHIFT DURATION",
+                            value = state.shiftDuration,
+                            cardBg = cardBg
+                        )
+                        StatCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.AttachMoney,
+                            label = "EST. EARNINGS",
+                            value = state.estimatedEarnings,
+                            cardBg = cardBg
+                        )
+                    }
+                    
+                    Spacer(Modifier.height(32.dp))
                 }
             }
-        }
 
-        Spacer(Modifier.height(32.dp))
-
-        // Stats Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.Timer,
-                label = "SHIFT DURATION",
-                value = state.shiftDuration,
-                cardBg = cardBg
-            )
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.AttachMoney,
-                label = "EST. EARNINGS",
-                value = state.estimatedEarnings,
-                cardBg = cardBg
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // Activity Log
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Today's Activity", style = MaterialTheme.typography.titleLarge, color = Color.White)
-            TextButton(onClick = {}) {
-                Text("View Full Log", color = accentBlue)
+            // 2. The Sliding Sheet Header
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                    color = darkBg,
+                    shadowElevation = 16.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(top = 24.dp, start = 24.dp, end = 24.dp, bottom = 16.dp)
+                    ) {
+                        // Handle bar for visual cue
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .width(40.dp)
+                                .height(4.dp)
+                                .background(Color.Gray.copy(alpha = 0.3f), CircleShape)
+                        )
+                        
+                        Spacer(Modifier.height(24.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Today's Activity", 
+                                style = MaterialTheme.typography.titleLarge, 
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            TextButton(onClick = {}) {
+                                Text("View Full Log", color = accentBlue)
+                            }
+                        }
+                    }
+                }
             }
-        }
 
-        Spacer(Modifier.height(16.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = scaffoldPadding.calculateBottomPadding() + 16.dp)
-        ) {
+            // 3. Activity Items (on the sheet)
             items(state.todayPunches) { punch ->
-                ActivityItem(punch, cardBg, accentBlue, statusGreen)
+                Box(modifier = Modifier.background(darkBg).padding(horizontal = 24.dp)) {
+                    ActivityItem(punch, cardBg, accentBlue, statusGreen)
+                }
+                Spacer(Modifier.height(12.dp).background(darkBg).fillMaxWidth())
+            }
+            
+            // Empty state if no punches
+            if (state.todayPunches.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(darkBg)
+                            .padding(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No activity recorded yet", color = Color.Gray)
+                    }
+                }
             }
         }
     }
