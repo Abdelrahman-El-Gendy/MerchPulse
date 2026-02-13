@@ -21,6 +21,10 @@ class EmployeeRepositoryImpl(
     override fun getEmployeeByEmail(email: String): Flow<Employee?> {
         return employeeDao.getEmployeeByEmail(email).map { it?.toDomain() }
     }
+
+    override fun getEmployeeByPhone(phone: String): Flow<Employee?> {
+        return employeeDao.getEmployeeByPhone(phone).map { it?.toDomain() }
+    }
     
     override fun getEmployeeById(id: String): Flow<Employee?> {
         return employeeDao.getEmployeeById(id).map { it?.toDomain() }
@@ -72,6 +76,7 @@ private fun EmployeeWithPermissions.toDomain(): Employee {
     return Employee(
         id = employee.id,
         email = employee.email,
+        phoneNumber = employee.phoneNumber,
         fullName = employee.fullName,
         role = Role.valueOf(employee.role),
         permissions = permissionEntities.map { Permission.valueOf(it.permission) }.toSet(),
@@ -84,6 +89,7 @@ private fun Employee.toEntity(pinHash: String): EmployeeEntity {
     return EmployeeEntity(
         id = id,
         email = email,
+        phoneNumber = phoneNumber,
         fullName = fullName,
         role = role.name,
         isActive = isActive,

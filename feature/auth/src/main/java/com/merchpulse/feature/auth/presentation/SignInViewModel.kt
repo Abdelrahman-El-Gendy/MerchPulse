@@ -29,7 +29,8 @@ class SignInViewModel(
 
     fun handleIntent(intent: SignInIntent) {
         when (intent) {
-            is SignInIntent.EmailChanged -> _state.value = _state.value.copy(email = intent.email)
+            is SignInIntent.PhoneNumberChanged -> _state.value = _state.value.copy(phoneNumber = intent.phone)
+            is SignInIntent.CountryCodeChanged -> _state.value = _state.value.copy(countryCode = intent.code)
             is SignInIntent.PinChanged -> _state.value = _state.value.copy(pin = intent.pin)
             is SignInIntent.Submit -> signIn()
         }
@@ -37,24 +38,32 @@ class SignInViewModel(
 
     private fun signIn() {
         viewModelScope.launch(dispatcherProvider.io) {
-            val email = _state.value.email.trim()
+            val phone = _state.value.phoneNumber.trim()
+            val countryCode = _state.value.countryCode
             val pin = _state.value.pin
 
-            if (email.isBlank() || pin.isBlank()) {
-                _state.value = _state.value.copy(error = "Email and PIN are required")
+            if (phone.isBlank() || pin.isBlank()) {
+                _state.value = _state.value.copy(error = "Phone number and Password are required")
                 return@launch
             }
 
             _state.value = _state.value.copy(isLoading = true, error = null)
 
-            val employee = employeeRepository.getEmployeeByEmail(email).first()
+            // In a real app, combine country code with phone
+            val fullPhone = "$countryCode$phone"
+            
+            // For now, search by the number provided in the database
+            // (Assuming the seeder or creation logic stores it consistently)
+            val employee = employeeRepository.getEmployeeByPhone(phone).first() 
+                ?: employeeRepository.getEmployeeByPhone(fullPhone).first()
+
             if (employee != null) {
                 val verified = employeeRepository.verifyPin(employee.id, pin)
                 if (verified) {
                     sessionManager.startSession(employee)
                     _effect.send(SignInEffect.NavigateToHome)
                 } else {
-                    _state.value = _state.value.copy(isLoading = false, error = "Invalid PIN")
+                    _state.value = _state.value.copy(isLoading = false, error = "Invalid Password")
                 }
             } else {
                 _state.value = _state.value.copy(isLoading = false, error = "User not found")

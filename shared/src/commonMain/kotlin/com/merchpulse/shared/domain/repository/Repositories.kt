@@ -27,6 +27,7 @@ interface EmployeeRepository {
     fun getAllEmployees(): Flow<List<Employee>>
     fun getEmployeeById(id: String): Flow<Employee?>
     fun getEmployeeByEmail(email: String): Flow<Employee?>
+    fun getEmployeeByPhone(phone: String): Flow<Employee?>
     
     suspend fun createEmployee(employee: Employee, pinHash: String): Result<Unit>
     suspend fun updateEmployee(employee: Employee): Result<Unit>

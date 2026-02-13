@@ -28,12 +28,16 @@ data class ProductEntity(
 
 @Entity(
     tableName = "employees",
-    indices = [Index(value = ["email"], unique = true)]
+    indices = [
+        Index(value = ["email"], unique = true),
+        Index(value = ["phoneNumber"], unique = true)
+    ]
 )
 data class EmployeeEntity(
     @PrimaryKey
     val id: String,
     val email: String,
+    val phoneNumber: String,
     val fullName: String,
     val role: String,
     val isActive: Boolean,

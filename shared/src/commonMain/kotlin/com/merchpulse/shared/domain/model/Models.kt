@@ -65,6 +65,7 @@ enum class Permission {
 data class Employee(
     val id: String,
     val email: String,
+    val phoneNumber: String,
     val fullName: String,
     val role: Role,
     val permissions: Set<Permission>,

@@ -66,6 +66,10 @@ interface EmployeeDao {
     fun getEmployeeByEmail(email: String): Flow<EmployeeWithPermissions?>
 
     @Transaction
+    @Query("SELECT * FROM employees WHERE phoneNumber = :phone")
+    fun getEmployeeByPhone(phone: String): Flow<EmployeeWithPermissions?>
+
+    @Transaction
     @Query("SELECT * FROM employees ORDER BY fullName ASC")
     fun getAllEmployees(): Flow<List<EmployeeWithPermissions>>
 
