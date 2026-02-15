@@ -8,8 +8,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,13 +24,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.merchpulse.core.designsystem.R
 import com.merchpulse.feature.stock.presentation.LowStockViewModel
 import com.merchpulse.shared.domain.model.Product
 import com.merchpulse.shared.feature.stock.StockIntent
 import org.koin.androidx.compose.koinViewModel
+
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.merchpulse.core.designsystem.theme.LocalWindowSizeClass
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,19 +44,23 @@ fun LowStockScreen(
     onNavigateBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    var selectedCategory by remember { mutableStateOf("All Alerts") }
+    var selectedCategory by remember { mutableStateOf("all_alerts") }
+    val windowSizeClass = LocalWindowSizeClass.current
+    val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
+    val isMedium = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Medium
 
     // Filter Logic
     val filteredProducts = remember(state.lowStockProducts, selectedCategory) {
-        if (selectedCategory == "All Alerts") {
+        if (selectedCategory == "all_alerts") {
             state.lowStockProducts
         } else {
             state.lowStockProducts.filter { it.category == selectedCategory }
         }
     }
 
+    val allAlertsLabel = stringResource(R.string.all_alerts)
     val categories = remember(state.lowStockProducts) {
-        listOf("All Alerts") + state.lowStockProducts.mapNotNull { it.category }.distinct()
+        listOf("all_alerts") + state.lowStockProducts.mapNotNull { it.category }.distinct()
     }
 
     Scaffold(
@@ -57,7 +69,7 @@ fun LowStockScreen(
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        "Low Stock Alerts", 
+                        stringResource(R.string.low_stock_alerts), 
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
@@ -65,12 +77,12 @@ fun LowStockScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
                     IconButton(onClick = { /* Filter */ }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter), tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -79,57 +91,131 @@ fun LowStockScreen(
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            // Summary Card
-            SummaryCard(
-                totalCount = state.lowStockProducts.size
-            )
+            if (isExpanded) {
+                // Two-pane for desktop/tablet
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                ) {
+                    // Left Pane: Summary and Categories
+                    Column(
+                        modifier = Modifier
+                            .weight(0.4f)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Spacer(Modifier.height(24.dp))
+                        SummaryCard(totalCount = state.lowStockProducts.size)
+                        Spacer(Modifier.height(32.dp))
+                        Text(
+                            stringResource(R.string.categories),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        categories.forEach { category ->
+                            FilterChip(
+                                selected = selectedCategory == category,
+                                onClick = { selectedCategory = category },
+                                label = { Text(if (category == "all_alerts") allAlertsLabel else category) },
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    borderColor = if (selectedCategory == category) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                    enabled = true,
+                                    selected = selectedCategory == category
+                                ),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                        }
+                    }
 
-            Spacer(Modifier.height(24.dp))
-
-            // Categories
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                items(categories) { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
-                        label = { Text(category) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            borderColor = if (selectedCategory == category) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            enabled = true,
-                            selected = selectedCategory == category
-                        ),
-                        shape = RoundedCornerShape(24.dp)
-                    )
-                }
-            }
-
-            // Product List
-            if (state.isLoading && state.lowStockProducts.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    // Right Pane: Product List
+                    Column(modifier = Modifier.weight(0.6f)) {
+                        Spacer(Modifier.height(24.dp))
+                        if (state.isLoading && state.lowStockProducts.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            }
+                        } else {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                contentPadding = PaddingValues(bottom = 24.dp)
+                            ) {
+                                items(filteredProducts) { product ->
+                                    LowStockProductCard(product)
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                // Single pane for mobile/medium
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = if (isMedium) 600.dp else 1200.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    items(filteredProducts) { product ->
-                        LowStockProductCard(product)
+                    // Summary Card
+                    SummaryCard(
+                        totalCount = state.lowStockProducts.size
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Categories
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        items(categories) { category ->
+                            FilterChip(
+                                selected = selectedCategory == category,
+                                onClick = { selectedCategory = category },
+                                label = { Text(if (category == "all_alerts") allAlertsLabel else category) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    borderColor = if (selectedCategory == category) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                    enabled = true,
+                                    selected = selectedCategory == category
+                                ),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                        }
+                    }
+
+                    // Product List
+                    if (state.isLoading && state.lowStockProducts.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(bottom = 24.dp)
+                        ) {
+                            items(filteredProducts) { product ->
+                                LowStockProductCard(product)
+                            }
+                        }
                     }
                 }
             }
@@ -157,13 +243,13 @@ fun SummaryCard(totalCount: Int) {
             ) {
                 Column {
                     Text(
-                        "Critical Inventory",
+                        stringResource(R.string.critical_inventory),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "$totalCount Items",
+                        stringResource(R.string.items_count, totalCount),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -177,7 +263,7 @@ fun SummaryCard(totalCount: Int) {
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Below safety threshold",
+                            stringResource(R.string.below_safety_threshold),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -193,7 +279,7 @@ fun SummaryCard(totalCount: Int) {
                 ) {
                     Icon(
                         Icons.Default.Warning,
-                        contentDescription = "Alert",
+                        contentDescription = stringResource(R.string.alert),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(24.dp)
                     )
@@ -212,7 +298,7 @@ fun SummaryCard(totalCount: Int) {
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Export List")
+                    Text(stringResource(R.string.export_list))
                 }
 
                 Button(
@@ -226,7 +312,7 @@ fun SummaryCard(totalCount: Int) {
                 ) {
                     Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Order All")
+                    Text(stringResource(R.string.order_all))
                 }
             }
         }
@@ -271,7 +357,7 @@ fun LowStockProductCard(product: Product) {
                                 .background(MaterialTheme.colorScheme.error, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                         ) {
-                            Text("CRITICAL", color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.labelSmall, fontSize = 8.sp)
+                            Text(stringResource(R.string.critical_label), color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.labelSmall, fontSize = 8.sp)
                         }
                     }
                 }
@@ -292,13 +378,13 @@ fun LowStockProductCard(product: Product) {
                         )
                         Icon(
                             Icons.Default.MoreVert,
-                            contentDescription = "Options",
+                            contentDescription = stringResource(R.string.options),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     
                     Text(
-                        "SKU: ${product.sku}",
+                        stringResource(R.string.sku_label, product.sku),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -319,7 +405,7 @@ fun LowStockProductCard(product: Product) {
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                "left",
+                                stringResource(R.string.left),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 4.dp)
@@ -327,9 +413,9 @@ fun LowStockProductCard(product: Product) {
                         }
                         
                         Text(
-                            "Threshold: ${product.lowStockThreshold}",
+                            stringResource(R.string.threshold_label, product.lowStockThreshold),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant // Slate 500
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -357,7 +443,7 @@ fun LowStockProductCard(product: Product) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Last sold 2h ago", // Mocked data
+                    stringResource(R.string.last_sold_ago),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -377,7 +463,7 @@ fun LowStockProductCard(product: Product) {
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Restock", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.restock), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.res.stringResource
+import com.merchpulse.core.designsystem.R
 import com.merchpulse.feature.punching.presentation.PunchViewModel
 import com.merchpulse.shared.domain.model.PunchType
 import com.merchpulse.shared.domain.model.TimePunch
@@ -34,6 +36,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.delay
 import java.util.Locale
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.merchpulse.core.designsystem.theme.LocalWindowSizeClass
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,11 +48,12 @@ fun PunchScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val timeZone = TimeZone.currentSystemDefault()
+    val windowSizeClass = LocalWindowSizeClass.current
+    val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
+    val isMedium = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Medium
     
-    // Background colors
-    val darkBg = Color(0xFF0D121F)
-    val cardBg = Color(0xFF1E2538)
-    val accentBlue = Color(0xFF3B82F6)
+    // Colors using MaterialTheme
+    val accentBlue = MaterialTheme.colorScheme.primary
     val statusGreen = Color(0xFF10B981)
 
     // Running clock state
@@ -60,302 +65,293 @@ fun PunchScreen(
         }
     }
     
-    // State for pulse animation
+    // Pulse animation logic
     val infiniteTransition = rememberInfiniteTransition()
     val isPunchedIn = state.lastPunch?.type == PunchType.IN
-    val buttonColor by animateColorAsState(
-        targetValue = if (isPunchedIn) accentBlue else statusGreen,
-        animationSpec = tween(500)
-    )
-    
+    val buttonColor by animateColorAsState(targetValue = if (isPunchedIn) accentBlue else statusGreen, label = "")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = if (isPunchedIn) 0.1f else 0f,
         targetValue = if (isPunchedIn) 0.4f else 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
+        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing), RepeatMode.Reverse),
+        label = ""
     )
-
-    val buttonScale by animateFloatAsState(
-        targetValue = if (isPunchedIn) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 100f)
-    )
-
-    val scrollState = rememberLazyListState()
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    
-    val firstItemOffset = remember { derivedStateOf { 
-        if (scrollState.layoutInfo.visibleItemsInfo.isEmpty()) 0f
-        else -scrollState.layoutInfo.visibleItemsInfo[0].offset.toFloat()
-    } }
-    
-    val firstItemIndex = remember { derivedStateOf { scrollState.firstVisibleItemIndex } }
-    
-    // Parallax and fade calculations (for items inside the list)
-    val headerAlpha by remember {
-        derivedStateOf {
-            if (firstItemIndex.value > 0) 0f
-            else (1f - (firstItemOffset.value / 600f)).coerceIn(0f, 1f)
-        }
-    }
+    val buttonScale by animateFloatAsState(targetValue = if (isPunchedIn) 1.05f else 1f, label = "")
 
     Scaffold(
-        containerColor = darkBg,
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        LazyColumn(
-            state = scrollState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = scaffoldPadding.calculateBottomPadding() + 24.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentAlignment = Alignment.TopCenter
         ) {
-            // 1. Background Content (now as Items for interactivity)
-            item {
-                Column(
+            if (isExpanded) {
+                // Two-pane layout for tablets
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .graphicsLayer {
-                            // Achieve parallax by counter-scrolling slightly
-                            translationY = firstItemOffset.value * 0.4f
-                            alpha = headerAlpha
-                        }
+                        .widthIn(max = 1400.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 48.dp, vertical = 32.dp),
+                    horizontalArrangement = Arrangement.spacedBy(48.dp)
                 ) {
-                    // Header
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                state.employeeRole,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.Gray
-                            )
-                            Text(
-                                state.employeeName,
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = {}) {
-                                Icon(Icons.Default.Notifications, "Notifications", tint = Color.White.copy(alpha = 0.7f))
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(Color.Gray.copy(alpha = 0.3f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(state.employeeName.take(1), color = Color.White, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // Date and Digital Clock
+                    // Left Pane: Status and Control
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            "${currentTime.dayOfWeek.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }}, ${currentTime.month.name.lowercase().take(3).replaceFirstChar { it.titlecase(Locale.getDefault()) }} ${currentTime.dayOfMonth}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.Gray
-                        )
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                formatTime(currentTime),
-                                style = MaterialTheme.typography.displayLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                if (currentTime.hour >= 12) " PM" else " AM",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Circular Punch Button
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Pulse background
-                        if (isPunchedIn) {
-                            Canvas(modifier = Modifier.size(240.dp)) {
-                                drawCircle(color = buttonColor.copy(alpha = pulseAlpha))
-                            }
-                        }
-
-                        // outer glow rings
-                        repeat(3) { i ->
-                            Canvas(modifier = Modifier.size(180.dp + (i * 30).dp)) {
-                                drawCircle(
-                                    color = accentBlue.copy(alpha = 0.05f),
-                                    style = Stroke(width = 1.dp.toPx())
-                                )
-                            }
-                        }
-
-                        Surface(
-                            onClick = {
+                        PunchHeader(state)
+                        Spacer(Modifier.height(32.dp))
+                        DigitalClock(currentTime)
+                        Spacer(Modifier.height(48.dp))
+                        PunchButton(
+                            isPunchedIn = isPunchedIn,
+                            buttonColor = buttonColor,
+                            pulseAlpha = pulseAlpha,
+                            buttonScale = buttonScale,
+                            accentBlue = accentBlue,
+                            statusGreen = statusGreen,
+                            onPunch = {
                                 val nextType = if (isPunchedIn) PunchType.OUT else PunchType.IN
                                 viewModel.handleIntent(PunchIntent.RecordPunch(nextType))
-                            },
-                            modifier = Modifier.size(160.dp * buttonScale),
-                            shape = CircleShape,
-                            color = darkBg,
-                            border = BorderStroke(2.dp, buttonColor.copy(alpha = 0.5f)),
-                            shadowElevation = 8.dp
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.Fingerprint,
-                                    null,
-                                    tint = buttonColor,
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    if (isPunchedIn) "PUNCH OUT" else "PUNCH IN",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    if (isPunchedIn) "Shift Active" else "Not Started",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
                             }
-                        }
-                        
-                        // Active indicator dot on the ring
-                        if (isPunchedIn) {
-                            Box(
-                                modifier = Modifier
-                                    .size(165.dp)
-                                    .rotate(-45f)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopCenter)
-                                        .size(8.dp)
-                                        .background(statusGreen, CircleShape)
-                                        .shadow(4.dp, CircleShape, ambientColor = statusGreen, spotColor = statusGreen)
-                                )
-                            }
-                        }
+                        )
                     }
 
-                    Spacer(Modifier.height(32.dp))
-
-                    // Stats Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Default.Timer,
-                            label = "SHIFT DURATION",
-                            value = state.shiftDuration,
-                            cardBg = cardBg
+                    // Right Pane: Log and Stats
+                    Column(modifier = Modifier.weight(1.2f)) {
+                        Text(
+                            stringResource(R.string.todays_activity), 
+                            style = MaterialTheme.typography.headlineSmall, 
+                            fontWeight = FontWeight.Bold
                         )
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Default.AttachMoney,
-                            label = "EST. EARNINGS",
-                            value = state.estimatedEarnings,
-                            cardBg = cardBg
-                        )
-                    }
-                    
-                    Spacer(Modifier.height(32.dp))
-                }
-            }
-
-            // 2. The Sliding Sheet Header
-            item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                    color = darkBg,
-                    shadowElevation = 16.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(top = 24.dp, start = 24.dp, end = 24.dp, bottom = 16.dp)
-                    ) {
-                        // Handle bar for visual cue
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .width(40.dp)
-                                .height(4.dp)
-                                .background(Color.Gray.copy(alpha = 0.3f), CircleShape)
-                        )
-                        
                         Spacer(Modifier.height(24.dp))
                         
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "Today's Activity", 
-                                style = MaterialTheme.typography.titleLarge, 
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.Timer,
+                                label = stringResource(R.string.shift_duration),
+                                value = state.shiftDuration,
+                                cardBg = MaterialTheme.colorScheme.surface
                             )
-                            TextButton(onClick = {}) {
-                                Text("View Full Log", color = accentBlue)
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.AttachMoney,
+                                label = stringResource(R.string.est_earnings),
+                                value = state.estimatedEarnings,
+                                cardBg = MaterialTheme.colorScheme.surface
+                            )
+                        }
+                        
+                        Spacer(Modifier.height(32.dp))
+                        
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.todayPunches) { punch ->
+                                ActivityItem(punch, MaterialTheme.colorScheme.surface, accentBlue, statusGreen)
+                            }
+                            if (state.todayPunches.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(48.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(stringResource(R.string.no_activity_recorded), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Mobile Layout
+                val scrollState = rememberLazyListState()
+                val firstItemOffset = remember { derivedStateOf { 
+                    if (scrollState.layoutInfo.visibleItemsInfo.isEmpty()) 0f
+                    else -scrollState.layoutInfo.visibleItemsInfo[0].offset.toFloat()
+                } }
+                val firstItemIndex = remember { derivedStateOf { scrollState.firstVisibleItemIndex } }
+                val headerAlpha by remember { derivedStateOf {
+                    if (firstItemIndex.value > 0) 0f
+                    else (1f - (firstItemOffset.value / 600f)).coerceIn(0f, 1f)
+                } }
+
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = 600.dp)
+                        .fillMaxSize()
+                ) {
+                    LazyColumn(
+                        state = scrollState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = scaffoldPadding.calculateBottomPadding() + 24.dp)
+                    ) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                                    .graphicsLayer {
+                                        translationY = firstItemOffset.value * 0.4f
+                                        alpha = headerAlpha
+                                    }
+                            ) {
+                                PunchHeader(state)
+                                Spacer(Modifier.height(16.dp))
+                                DigitalClock(currentTime, horizontalAlignment = Alignment.CenterHorizontally)
+                                Spacer(Modifier.height(24.dp))
+                                Box(modifier = Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
+                                    PunchButton(
+                                        isPunchedIn = isPunchedIn,
+                                        buttonColor = buttonColor,
+                                        pulseAlpha = pulseAlpha,
+                                        buttonScale = buttonScale,
+                                        accentBlue = accentBlue,
+                                        statusGreen = statusGreen,
+                                        onPunch = {
+                                            val nextType = if (isPunchedIn) PunchType.OUT else PunchType.IN
+                                            viewModel.handleIntent(PunchIntent.RecordPunch(nextType))
+                                        }
+                                    )
+                                }
+                                Spacer(Modifier.height(32.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    StatCard(
+                                        modifier = Modifier.weight(1f),
+                                        icon = Icons.Default.Timer,
+                                        label = stringResource(R.string.shift_duration),
+                                        value = state.shiftDuration,
+                                        cardBg = MaterialTheme.colorScheme.surface
+                                    )
+                                    StatCard(
+                                        modifier = Modifier.weight(1f),
+                                        icon = Icons.Default.AttachMoney,
+                                        label = stringResource(R.string.est_earnings),
+                                        value = state.estimatedEarnings,
+                                        cardBg = MaterialTheme.colorScheme.surface
+                                    )
+                                }
+                                Spacer(Modifier.height(32.dp))
+                            }
+                        }
+
+                        item {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                shadowElevation = 16.dp
+                            ) {
+                                Column(modifier = Modifier.padding(top = 24.dp, start = 24.dp, end = 24.dp, bottom = 16.dp)) {
+                                    Box(modifier = Modifier.align(Alignment.CenterHorizontally).width(40.dp).height(4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), CircleShape))
+                                    Spacer(Modifier.height(24.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text(stringResource(R.string.todays_activity), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                        TextButton(onClick = {}) { Text(stringResource(R.string.view_full_log), color = accentBlue) }
+                                    }
+                                }
+                            }
+                        }
+
+                        items(state.todayPunches) { punch ->
+                            Box(modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp)) {
+                                ActivityItem(punch, MaterialTheme.colorScheme.surface, accentBlue, statusGreen)
+                            }
+                            Spacer(Modifier.height(12.dp).background(MaterialTheme.colorScheme.background).fillMaxWidth())
+                        }
+                        
+                        if (state.todayPunches.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(48.dp), contentAlignment = Alignment.Center) {
+                                    Text(stringResource(R.string.no_activity_recorded), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            // 3. Activity Items (on the sheet)
-            items(state.todayPunches) { punch ->
-                Box(modifier = Modifier.background(darkBg).padding(horizontal = 24.dp)) {
-                    ActivityItem(punch, cardBg, accentBlue, statusGreen)
-                }
-                Spacer(Modifier.height(12.dp).background(darkBg).fillMaxWidth())
+@Composable
+fun PunchHeader(state: com.merchpulse.shared.feature.punching.PunchState) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(state.employeeRole, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(state.employeeName, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null, tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)) }
+            Spacer(Modifier.width(8.dp))
+            Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), CircleShape), contentAlignment = Alignment.Center) {
+                Text(state.employeeName.take(1), fontWeight = FontWeight.Bold)
             }
-            
-            // Empty state if no punches
-            if (state.todayPunches.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(darkBg)
-                            .padding(48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No activity recorded yet", color = Color.Gray)
-                    }
-                }
+        }
+    }
+}
+
+@Composable
+fun DigitalClock(currentTime: kotlinx.datetime.LocalDateTime, horizontalAlignment: Alignment.Horizontal = Alignment.Start) {
+    Column(horizontalAlignment = horizontalAlignment) {
+        Text(
+            "${currentTime.dayOfWeek.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }}, ${currentTime.month.name.lowercase().take(3).replaceFirstChar { it.titlecase(Locale.getDefault()) }} ${currentTime.dayOfMonth}",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(formatTime(currentTime), style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(if (currentTime.hour >= 12) " PM" else " AM", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
+        }
+    }
+}
+
+@Composable
+fun PunchButton(
+    isPunchedIn: Boolean,
+    buttonColor: Color,
+    pulseAlpha: Float,
+    buttonScale: Float,
+    accentBlue: Color,
+    statusGreen: Color,
+    onPunch: () -> Unit
+) {
+    Box(contentAlignment = Alignment.Center) {
+        if (isPunchedIn) {
+            Canvas(modifier = Modifier.size(240.dp)) { drawCircle(color = buttonColor.copy(alpha = pulseAlpha)) }
+        }
+        repeat(3) { i ->
+            Canvas(modifier = Modifier.size(180.dp + (i * 30).dp)) {
+                drawCircle(color = accentBlue.copy(alpha = 0.05f), style = Stroke(width = 1.dp.toPx()))
+            }
+        }
+        Surface(
+            onClick = onPunch,
+            modifier = Modifier.size(160.dp * buttonScale),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(2.dp, buttonColor.copy(alpha = 0.5f)),
+            shadowElevation = 8.dp
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Icon(Icons.Default.Fingerprint, null, tint = buttonColor, modifier = Modifier.size(48.dp))
+                Spacer(Modifier.height(8.dp))
+                Text(if (isPunchedIn) stringResource(R.string.punch_out) else stringResource(R.string.punch_in), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(if (isPunchedIn) stringResource(R.string.shift_active) else stringResource(R.string.not_started), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (isPunchedIn) {
+            Box(modifier = Modifier.size(165.dp).rotate(-45f)) {
+                Box(modifier = Modifier.align(Alignment.TopCenter).size(8.dp).background(statusGreen, CircleShape).shadow(4.dp, CircleShape, ambientColor = statusGreen, spotColor = statusGreen))
             }
         }
     }
@@ -376,12 +372,12 @@ fun StatCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(12.dp))
-            Text(value, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -392,14 +388,11 @@ fun ActivityItem(punch: TimePunch, cardBg: Color, accentBlue: Color, statusGreen
     val dotColor = if (isIn) statusGreen else accentBlue
     
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-        // Timeline dot and line
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
             Box(modifier = Modifier.size(12.dp).background(dotColor, CircleShape))
-            Box(modifier = Modifier.width(1.dp).height(60.dp).background(Color.Gray.copy(alpha = 0.2f)))
+            Box(modifier = Modifier.width(1.dp).height(60.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)))
         }
-        
         Spacer(Modifier.width(12.dp))
-        
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -407,23 +400,15 @@ fun ActivityItem(punch: TimePunch, cardBg: Color, accentBlue: Color, statusGreen
         ) {
             Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text(
-                        if (isIn) "Shift Started" else "Shift Ended",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
-                    )
-                    Text(
-                        "Regular Pay • Warehouse A",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
+                    Text(if (isIn) stringResource(R.string.shift_started) else stringResource(R.string.shift_ended), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.regular_pay_warehouse), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(
                     punch.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).let { 
                         "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')} ${if (it.hour >= 12) "PM" else "AM"}"
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
