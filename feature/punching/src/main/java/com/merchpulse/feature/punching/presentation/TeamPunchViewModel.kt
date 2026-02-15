@@ -60,7 +60,9 @@ class TeamPunchViewModel(
                             employeeName = emp.fullName,
                             firstIn = sins.firstOrNull()?.timestamp,
                             lastOut = outs.lastOrNull()?.timestamp,
-                            totalPunches = empPunches.size
+                            totalPunches = empPunches.size,
+                            role = emp.role,
+                            isActive = emp.isActive
                         )
                     }
                     _state.update { it.copy(summaries = summaries, allPunches = punches, isLoading = false) }
