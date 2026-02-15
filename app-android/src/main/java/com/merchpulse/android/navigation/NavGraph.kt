@@ -1,6 +1,7 @@
 package com.merchpulse.android.navigation
 
 sealed class Screen(val route: String) {
+    data object Splash : Screen("splash")
     data object SignIn : Screen("signin")
     data object SignUp : Screen("signup")
     data object Home : Screen("home")

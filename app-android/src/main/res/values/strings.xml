@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MerchPulse</string>
+    <string name="tagline">EMPOWERING YOUR INVENTORY</string>
+    <string name="secure_systems_active">SECURE SYSTEMS ACTIVE</string>
+    <string name="secure_icon_description">Secure Shield Icon</string>
 </resources>

@@ -36,8 +36,9 @@ fun MerchPulseMainScaffold(
     val windowSizeClass = LocalWindowSizeClass.current
     val isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
 
-    // Hide bottom bar on auth and detail/form screens
+    // Hide bottom bar on auth, splash and detail/form screens
     val showNavigation = currentRoute !in listOf(
+        Screen.Splash.route,
         Screen.SignIn.route, 
         Screen.SignUp.route,
         Screen.ProductForm.route,
@@ -95,7 +96,7 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
                     .size(56.dp)
                     .background(accentBlue, CircleShape)
             ) {
-                Icon(Icons.Default.Fingerprint, "Punch", tint = Color.White)
+                Icon(Icons.Default.Fingerprint, "Punch", tint = MaterialTheme.colorScheme.onPrimary)
             }
         },
         modifier = Modifier.fillMaxHeight()
@@ -113,9 +114,9 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             )
             NavigationRailItem(
@@ -126,9 +127,9 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             )
             NavigationRailItem(
@@ -139,9 +140,9 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             )
             NavigationRailItem(
@@ -152,9 +153,9 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             )
         }
@@ -163,8 +164,9 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
 
 @Composable
 fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
-    val darkBg = Color(0xFF1E2538) // Matching internal card bg
-    val accentBlue = Color(0xFF3B82F6)
+    val barColor = MaterialTheme.colorScheme.surfaceVariant
+    val accentColor = MaterialTheme.colorScheme.primary
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     val navAction = { route: String ->
         navController.navigate(route) {
@@ -187,9 +189,9 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
                 .fillMaxWidth()
                 .height(72.dp),
             shape = RoundedCornerShape(36.dp),
-            color = darkBg.copy(alpha = 0.98f),
+            color = barColor.copy(alpha = 0.98f),
             shadowElevation = 12.dp,
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
         ) {
             Row(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -200,14 +202,16 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
                     Icons.Default.GridView, 
                     stringResource(R.string.home), 
                     currentRoute == Screen.Home.route,
-                    accentBlue
+                    accentColor,
+                    onSurfaceColor
                 ) { navAction(Screen.Home.route) }
                 
                 NavigationItem(
                     Icons.Default.Inventory2, 
                     stringResource(R.string.stock), 
                     currentRoute == Screen.Inventory.route,
-                    accentBlue
+                    accentColor,
+                    onSurfaceColor
                 ) { navAction(Screen.Inventory.route) }
 
                 // Spacer for the center floating button
@@ -217,14 +221,16 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
                     Icons.Default.People, 
                     stringResource(R.string.team), 
                     currentRoute == Screen.Employees.route,
-                    accentBlue
+                    accentColor,
+                    onSurfaceColor
                 ) { navAction(Screen.Employees.route) }
 
                 NavigationItem(
                     Icons.Default.Settings, 
                     stringResource(R.string.settings), 
                     currentRoute == Screen.Settings.route,
-                    accentBlue
+                    accentColor,
+                    onSurfaceColor
                 ) { navAction(Screen.Settings.route) }
             }
         }
@@ -235,7 +241,7 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
                 .align(Alignment.TopCenter)
                 .size(64.dp)
                 .shadow(12.dp, CircleShape)
-                .background(accentBlue, CircleShape)
+                .background(accentColor, CircleShape)
                 .clickable(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                     indication = null,
@@ -250,7 +256,7 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
             Icon(
                 Icons.Default.Fingerprint, 
                 "Punch", 
-                tint = Color.White, 
+                tint = MaterialTheme.colorScheme.onPrimary, 
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -263,6 +269,7 @@ private fun NavigationItem(
     label: String, 
     selected: Boolean, 
     accent: Color,
+    unselected: Color,
     onClick: () -> Unit
 ) {
     Column(
@@ -276,13 +283,13 @@ private fun NavigationItem(
         Icon(
             icon, 
             label, 
-            tint = if (selected) accent else Color.Gray,
+            tint = if (selected) accent else unselected,
             modifier = Modifier.size(24.dp)
         )
         Text(
             label, 
             style = MaterialTheme.typography.labelSmall, 
-            color = if (selected) accent else Color.Gray,
+            color = if (selected) accent else unselected,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
         if (selected) {

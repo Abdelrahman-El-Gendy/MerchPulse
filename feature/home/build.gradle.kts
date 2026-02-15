@@ -42,4 +42,5 @@ dependencies {
     implementation(libs.koin.androidx.compose)
     implementation(libs.coroutines.android)
     implementation(libs.datetime)
+    implementation(libs.androidx.biometric)
 }

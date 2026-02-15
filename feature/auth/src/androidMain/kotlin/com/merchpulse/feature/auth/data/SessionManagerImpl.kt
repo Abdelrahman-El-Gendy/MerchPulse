@@ -13,17 +13,29 @@ class SessionManagerImpl(
     private val context: Context
 ) : SessionManager {
     
-    // In production, use EncryptedSharedPreferences to persist and read on init
-    private val _currentEmployee = MutableStateFlow<Employee?>(null)
+    private val prefs = context.getSharedPreferences("merchpulse_session", Context.MODE_PRIVATE)
+    private val keyEmployee = "current_employee"
+    
+    private val _currentEmployee = MutableStateFlow<Employee?>(loadSession())
     override val currentEmployee = _currentEmployee.asStateFlow()
+
+    private fun loadSession(): Employee? {
+        val json = prefs.getString(keyEmployee, null) ?: return null
+        return try {
+            Json.decodeFromString<Employee>(json)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     override suspend fun startSession(employee: Employee) {
         _currentEmployee.value = employee
-        // Save to EncryptedSharedPreferences
+        val json = Json.encodeToString(employee)
+        prefs.edit().putString(keyEmployee, json).apply()
     }
 
     override suspend fun endSession() {
         _currentEmployee.value = null
-        // Clear EncryptedSharedPreferences
+        prefs.edit().remove(keyEmployee).apply()
     }
 }

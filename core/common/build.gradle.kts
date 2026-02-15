@@ -20,6 +20,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.coroutines.android)
+            implementation(libs.koin.android)
         }
     }
 }

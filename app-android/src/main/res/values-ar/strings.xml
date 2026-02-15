@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ميرش بالس</string>
+    <string name="tagline">نحو تمكين مخزونك</string>
+    <string name="secure_systems_active">الأنظمة الأمنية مفعلة</string>
+    <string name="secure_icon_description">أيقونة درع الحماية</string>
 </resources>
