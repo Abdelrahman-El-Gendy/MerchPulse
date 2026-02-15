@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.merchpulse.feature.auth.ui.SignInScreen
 import com.merchpulse.feature.auth.ui.SignUpScreen
 import com.merchpulse.feature.home.ui.HomeScreen
+import com.merchpulse.feature.home.ui.SettingsScreen
 import com.merchpulse.feature.products.ui.ProductListScreen
 import com.merchpulse.feature.products.ui.ProductFormScreen
 import com.merchpulse.feature.stock.ui.LowStockScreen
@@ -103,6 +104,17 @@ fun MerchPulseNavHost(
 
         composable(Screen.TeamPunches.route) {
             TeamPunchScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.SignIn.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

@@ -12,4 +12,5 @@ sealed class Screen(val route: String) {
     data object Punch : Screen("punch")
     data object Employees : Screen("employees")
     data object TeamPunches : Screen("team_punches")
+    data object Settings : Screen("settings")
 }
