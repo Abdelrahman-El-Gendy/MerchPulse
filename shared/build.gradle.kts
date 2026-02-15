@@ -23,6 +23,8 @@ kotlin {
             isStatic = true
         }
     }
+    
+    jvm()
 
     sourceSets {
         commonMain.dependencies {

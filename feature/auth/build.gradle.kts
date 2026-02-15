@@ -1,7 +1,56 @@
 plugins {
+    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.serialization)
+}
+
+kotlin {
+    androidTarget {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
+        }
+    }
+    
+    jvm()
+
+    sourceSets.all {
+        languageSettings.optIn("org.jetbrains.compose.resources.ExperimentalResourceApi")
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(compose.components.resources)
+            implementation(compose.components.uiToolingPreview)
+            
+            implementation(project(":shared"))
+            implementation(project(":core:common"))
+            implementation(project(":core:designsystem"))
+            
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.datetime)
+            implementation(libs.serialization.json)
+            implementation(libs.compose.material.icons.extended)
+        }
+        
+        androidMain.dependencies {
+            implementation(project(":core:database-android"))
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.lifecycle.runtime.ktx)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.compose.ui.tooling.preview)
+            implementation(libs.koin.android)
+            implementation(libs.koin.androidx.compose)
+            implementation(libs.coroutines.android)
+        }
+    }
 }
 
 android {
@@ -23,26 +72,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-}
-
-dependencies {
-    implementation(project(":shared"))
-    implementation(project(":core:common"))
-    implementation(project(":core:designsystem"))
-    implementation(project(":core:database-android")) // To access data models directly if needed, or via repository interface
-    
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.compose.material3)
-    implementation(libs.koin.androidx.compose)
-    implementation(libs.coroutines.android)
-    implementation(libs.datetime)
-    implementation(libs.compose.material.icons.extended)
-    implementation(libs.serialization.json)
 }

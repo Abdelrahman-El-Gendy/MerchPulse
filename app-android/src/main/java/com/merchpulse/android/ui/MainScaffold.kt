@@ -21,6 +21,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.merchpulse.android.navigation.Screen
 
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.merchpulse.core.designsystem.theme.LocalWindowSizeClass
+
 @Composable
 fun MerchPulseMainScaffold(
     navController: NavController,
@@ -28,30 +31,128 @@ fun MerchPulseMainScaffold(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val windowSizeClass = LocalWindowSizeClass.current
+    val isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
 
     // Hide bottom bar on auth and detail/form screens
-    val showBottomBar = currentRoute !in listOf(
+    val showNavigation = currentRoute !in listOf(
         Screen.SignIn.route, 
         Screen.SignUp.route,
         Screen.ProductForm.route,
         Screen.LowStock.route
     )
 
-    val darkBg = Color(0xFF0D121F)
+    val darkBg = MaterialTheme.colorScheme.background
 
-    Box(modifier = Modifier.fillMaxSize().background(darkBg)) {
-        // Screen Content wraps the entire area
-        content(PaddingValues(bottom = if (showBottomBar) 100.dp else 0.dp))
+    Row(modifier = Modifier.fillMaxSize().background(darkBg)) {
+        // Show Navigation Rail for Medium and Expanded screens
+        if (showNavigation && !isCompact) {
+            ResponsiveNavigationRail(navController, currentRoute)
+        }
 
-        // Floating Bottom Bar as an overlay
-        if (showBottomBar) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-            ) {
-                FloatingBottomBar(navController, currentRoute)
+        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            // Screen Content wraps the entire area
+            content(PaddingValues(bottom = if (showNavigation && isCompact) 100.dp else 0.dp))
+
+            // Floating Bottom Bar as an overlay - only for compact screens
+            if (showNavigation && isCompact) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    FloatingBottomBar(navController, currentRoute)
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?) {
+    val accentBlue = MaterialTheme.colorScheme.primary
+    val navBackBg = MaterialTheme.colorScheme.surface
+    
+    val navAction = { route: String ->
+        navController.navigate(route) {
+            popUpTo(Screen.Home.route) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    NavigationRail(
+        containerColor = navBackBg,
+        header = {
+            IconButton(
+                onClick = { if (currentRoute != Screen.Punch.route) navAction(Screen.Punch.route) },
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .size(56.dp)
+                    .background(accentBlue, CircleShape)
+            ) {
+                Icon(Icons.Default.Fingerprint, "Punch", tint = Color.White)
+            }
+        },
+        modifier = Modifier.fillMaxHeight()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            NavigationRailItem(
+                selected = currentRoute == Screen.Home.route,
+                onClick = { navAction(Screen.Home.route) },
+                icon = { Icon(Icons.Default.GridView, "Home") },
+                label = { Text("Home") },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = accentBlue,
+                    selectedTextColor = accentBlue,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationRailItem(
+                selected = currentRoute == Screen.Inventory.route,
+                onClick = { navAction(Screen.Inventory.route) },
+                icon = { Icon(Icons.Default.Inventory2, "Stock") },
+                label = { Text("Stock") },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = accentBlue,
+                    selectedTextColor = accentBlue,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationRailItem(
+                selected = currentRoute == Screen.Employees.route,
+                onClick = { navAction(Screen.Employees.route) },
+                icon = { Icon(Icons.Default.People, "Team") },
+                label = { Text("Team") },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = accentBlue,
+                    selectedTextColor = accentBlue,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.Transparent
+                )
+            )
+            NavigationRailItem(
+                selected = false,
+                onClick = { },
+                icon = { Icon(Icons.Default.Settings, "Settings") },
+                label = { Text("Settings") },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = accentBlue,
+                    selectedTextColor = accentBlue,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.Transparent
+                )
+            )
         }
     }
 }

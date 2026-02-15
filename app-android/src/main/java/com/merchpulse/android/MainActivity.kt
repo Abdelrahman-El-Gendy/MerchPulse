@@ -13,11 +13,16 @@ import com.merchpulse.android.navigation.MerchPulseNavHost
 import com.merchpulse.android.ui.MerchPulseMainScaffold
 import com.merchpulse.core.designsystem.theme.MerchPulseTheme
 
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MerchPulseTheme {
+            val windowSizeClass = calculateWindowSizeClass(this)
+            MerchPulseTheme(windowSizeClass = windowSizeClass) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
