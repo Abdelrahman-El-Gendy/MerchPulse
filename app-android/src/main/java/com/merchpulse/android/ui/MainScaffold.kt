@@ -22,6 +22,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.merchpulse.android.navigation.Screen
 
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.ui.res.stringResource
+import com.merchpulse.core.designsystem.R
 import com.merchpulse.core.designsystem.theme.LocalWindowSizeClass
 
 @Composable
@@ -39,7 +41,9 @@ fun MerchPulseMainScaffold(
         Screen.SignIn.route, 
         Screen.SignUp.route,
         Screen.ProductForm.route,
-        Screen.LowStock.route
+        Screen.LowStock.route,
+        Screen.Settings.route,
+        Screen.TeamPunches.route
     )
 
     val darkBg = MaterialTheme.colorScheme.background
@@ -104,8 +108,8 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
             NavigationRailItem(
                 selected = currentRoute == Screen.Home.route,
                 onClick = { navAction(Screen.Home.route) },
-                icon = { Icon(Icons.Default.GridView, "Home") },
-                label = { Text("Home") },
+                icon = { Icon(Icons.Default.GridView, stringResource(R.string.home)) },
+                label = { Text(stringResource(R.string.home)) },
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
@@ -117,8 +121,8 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
             NavigationRailItem(
                 selected = currentRoute == Screen.Inventory.route,
                 onClick = { navAction(Screen.Inventory.route) },
-                icon = { Icon(Icons.Default.Inventory2, "Stock") },
-                label = { Text("Stock") },
+                icon = { Icon(Icons.Default.Inventory2, stringResource(R.string.stock)) },
+                label = { Text(stringResource(R.string.stock)) },
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
@@ -130,8 +134,8 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
             NavigationRailItem(
                 selected = currentRoute == Screen.Employees.route,
                 onClick = { navAction(Screen.Employees.route) },
-                icon = { Icon(Icons.Default.People, "Team") },
-                label = { Text("Team") },
+                icon = { Icon(Icons.Default.People, stringResource(R.string.team)) },
+                label = { Text(stringResource(R.string.team)) },
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
@@ -141,10 +145,10 @@ fun ResponsiveNavigationRail(navController: NavController, currentRoute: String?
                 )
             )
             NavigationRailItem(
-                selected = false,
-                onClick = { },
-                icon = { Icon(Icons.Default.Settings, "Settings") },
-                label = { Text("Settings") },
+                selected = currentRoute == Screen.Settings.route,
+                onClick = { navAction(Screen.Settings.route) },
+                icon = { Icon(Icons.Default.Settings, stringResource(R.string.settings)) },
+                label = { Text(stringResource(R.string.settings)) },
                 colors = NavigationRailItemDefaults.colors(
                     selectedIconColor = accentBlue,
                     selectedTextColor = accentBlue,
@@ -194,14 +198,14 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
             ) {
                 NavigationItem(
                     Icons.Default.GridView, 
-                    "Home", 
+                    stringResource(R.string.home), 
                     currentRoute == Screen.Home.route,
                     accentBlue
                 ) { navAction(Screen.Home.route) }
                 
                 NavigationItem(
                     Icons.Default.Inventory2, 
-                    "Stock", 
+                    stringResource(R.string.stock), 
                     currentRoute == Screen.Inventory.route,
                     accentBlue
                 ) { navAction(Screen.Inventory.route) }
@@ -211,17 +215,17 @@ fun FloatingBottomBar(navController: NavController, currentRoute: String?) {
 
                 NavigationItem(
                     Icons.Default.People, 
-                    "Team", 
+                    stringResource(R.string.team), 
                     currentRoute == Screen.Employees.route,
                     accentBlue
                 ) { navAction(Screen.Employees.route) }
 
                 NavigationItem(
                     Icons.Default.Settings, 
-                    "Settings", 
-                    false, // Placeholder
+                    stringResource(R.string.settings), 
+                    currentRoute == Screen.Settings.route,
                     accentBlue
-                ) { /* Settings action */ }
+                ) { navAction(Screen.Settings.route) }
             }
         }
 
