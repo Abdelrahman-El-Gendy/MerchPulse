@@ -31,6 +31,7 @@ class MerchPulseApplication : Application() {
             androidContext(this@MerchPulseApplication)
             modules(
                 commonModule,
+                com.merchpulse.core.common.di.platformModule,
                 databaseModule,
                 authModule,
                 homeModule,

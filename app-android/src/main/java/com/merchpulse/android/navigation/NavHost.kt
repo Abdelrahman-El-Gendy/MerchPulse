@@ -9,6 +9,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.merchpulse.feature.employees.ui.EmployeeListScreen
+import com.merchpulse.android.ui.SplashScreen
 import com.merchpulse.feature.auth.ui.SignInScreen
 import com.merchpulse.feature.auth.ui.SignUpScreen
 import com.merchpulse.feature.home.ui.HomeScreen
@@ -18,19 +20,30 @@ import com.merchpulse.feature.products.ui.ProductFormScreen
 import com.merchpulse.feature.stock.ui.LowStockScreen
 import com.merchpulse.feature.punching.ui.PunchScreen
 import com.merchpulse.feature.punching.ui.TeamPunchScreen
-import com.merchpulse.feature.employees.ui.EmployeeListScreen
 
 @Composable
 fun MerchPulseNavHost(
     navController: NavHostController,
+    startDestination: String = Screen.SignIn.route,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues(0.dp)
 ) {
     NavHost(
         navController = navController, 
-        startDestination = Screen.SignIn.route,
+        startDestination = Screen.Splash.route,
         modifier = modifier
     ) {
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onNavigateNext = { isLoggedIn ->
+                    val destination = if (isLoggedIn) Screen.Home.route else Screen.SignIn.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
         composable(Screen.SignIn.route) {
             SignInScreen(
                 onLoginSuccess = {

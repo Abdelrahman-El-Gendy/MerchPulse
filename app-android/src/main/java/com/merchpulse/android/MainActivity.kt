@@ -16,13 +16,42 @@ import com.merchpulse.core.designsystem.theme.MerchPulseTheme
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 
-class MainActivity : ComponentActivity() {
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.core.os.LocaleListCompat
+import com.merchpulse.core.common.PreferencesManager
+import org.koin.android.ext.android.inject
+
+class MainActivity : AppCompatActivity() {
+    private val preferencesManager: PreferencesManager by inject()
+    
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val windowSizeClass = calculateWindowSizeClass(this)
-            MerchPulseTheme(windowSizeClass = windowSizeClass) {
+            val themeMode by preferencesManager.themeStream.collectAsState("follow_system")
+            val language by preferencesManager.languageStream.collectAsState("en")
+            
+            // Apply Locale
+            LaunchedEffect(language) {
+                val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(language)
+                AppCompatDelegate.setApplicationLocales(appLocale)
+            }
+
+            val isDarkTheme = when (themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
+
+            MerchPulseTheme(
+                windowSizeClass = windowSizeClass,
+                darkTheme = isDarkTheme
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

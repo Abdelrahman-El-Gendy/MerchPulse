@@ -30,6 +30,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.merchpulse.core.designsystem.AppResources as Res
+import com.merchpulse.core.designsystem.component.MerchPulseLogo
 import com.merchpulse.feature.auth.presentation.SignUpViewModel
 import com.merchpulse.shared.domain.model.Permission
 import com.merchpulse.shared.domain.model.Role
@@ -80,20 +81,10 @@ fun SignUpScreen(
             ) {
                 Spacer(Modifier.height(32.dp))
 
-                // Top Icon Box
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Inventory,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
+                // Top Logo
+                MerchPulseLogo(
+                    modifier = Modifier.size(100.dp)
+                )
 
                 Spacer(Modifier.height(24.dp))
 

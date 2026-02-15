@@ -1,5 +1,9 @@
 package com.merchpulse.feature.home.ui
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,23 +18,39 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.merchpulse.core.designsystem.R
+import com.merchpulse.feature.home.presentation.SettingsViewModel
+import com.merchpulse.core.designsystem.component.MerchPulseLogo
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    viewModel: SettingsViewModel = koinViewModel(),
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var darkModeEnabled by remember { mutableStateOf(true) }
-    var biometricEnabled by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val themeMode by viewModel.theme.collectAsState()
+    val language by viewModel.language.collectAsState()
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    val appVersion = remember {
+        try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            "${pInfo.versionName} (${pInfo.versionCode})"
+        } catch (e: Exception) {
+            "1.0.0 (1)"
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -80,15 +100,18 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Default.Language,
                     title = stringResource(R.string.language),
-                    subtitle = stringResource(R.string.english_us),
+                    subtitle = if (language == "ar") "العربية" else "English (US)",
                     showArrow = true,
-                    onClick = { /* TODO */ }
+                    onClick = { showLanguageDialog = true }
                 )
+                
                 SettingsToggleItem(
                     icon = Icons.Default.NightsStay,
                     title = stringResource(R.string.dark_mode),
-                    checked = darkModeEnabled,
-                    onCheckedChange = { darkModeEnabled = it }
+                    checked = themeMode == "dark",
+                    onCheckedChange = { isDark ->
+                        viewModel.setTheme(if (isDark) "dark" else "light")
+                    }
                 )
             }
 
@@ -115,8 +138,16 @@ fun SettingsScreen(
                 SettingsToggleItem(
                     icon = Icons.Default.Fingerprint,
                     title = stringResource(R.string.biometric_login),
-                    checked = biometricEnabled,
-                    onCheckedChange = { biometricEnabled = it }
+                    checked = viewModel.getBiometricEnabled(),
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            authenticateWithBiometric(context) { success ->
+                                if (success) viewModel.setBiometricEnabled(true)
+                            }
+                        } else {
+                            viewModel.setBiometricEnabled(false)
+                        }
+                    }
                 )
                 SettingsItem(
                     icon = Icons.Default.Devices,
@@ -127,19 +158,17 @@ fun SettingsScreen(
             }
 
             // App Info Card
-            AppInfoCard()
+            AppInfoCard(appVersion)
 
             // Log Out Button
             Button(
-                onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                onClick = { viewModel.logout(onLogout) },
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1E1E2E), // Darker specialized color as in design or surfaceVariant
-                    contentColor = Color(0xFFFF4B4B) // Red text
-                )
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     stringResource(R.string.log_out),
@@ -151,6 +180,82 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(stringResource(R.string.language)) },
+            text = {
+                Column {
+                    LanguageOption("en", "English (US)", language == "en") {
+                        viewModel.setLanguage("en")
+                        showLanguageDialog = false
+                    }
+                    LanguageOption("ar", "العربية (Arabic)", language == "ar") {
+                        viewModel.setLanguage("ar")
+                        showLanguageDialog = false
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+}
+
+@Composable
+fun LanguageOption(
+    code: String,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+private fun authenticateWithBiometric(context: Context, onResult: (Boolean) -> Unit) {
+    val activity = context.findActivity() ?: return
+    val executor = ContextCompat.getMainExecutor(context)
+    val biometricPrompt = BiometricPrompt(activity, executor,
+        object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                super.onAuthenticationSucceeded(result)
+                onResult(true)
+            }
+
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                super.onAuthenticationError(errorCode, errString)
+                onResult(false)
+            }
+
+            override fun onAuthenticationFailed() {
+                super.onAuthenticationFailed()
+                onResult(false)
+            }
+        })
+
+    val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        .setTitle("Biometric Login")
+        .setSubtitle("Log in using your biometric credential")
+        .setNegativeButtonText("Cancel")
+        .build()
+
+    biometricPrompt.authenticate(promptInfo)
+}
+
+private fun Context.findActivity(): AppCompatActivity? = when (this) {
+    is AppCompatActivity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable
@@ -200,7 +305,6 @@ fun SettingsItem(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Icon Container
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -335,7 +439,7 @@ fun SettingsToggleItem(
 }
 
 @Composable
-fun AppInfoCard() {
+fun AppInfoCard(version: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -349,21 +453,10 @@ fun AppInfoCard() {
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // App Icon
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(64.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Storefront,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = Color.White
-                    )
-                }
-            }
+            // App Logo
+            MerchPulseLogo(
+                modifier = Modifier.size(80.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -390,7 +483,7 @@ fun AppInfoCard() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
                 Text(
-                    stringResource(R.string.version_build_format),
+                    version,
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )

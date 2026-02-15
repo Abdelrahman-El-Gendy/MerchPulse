@@ -27,6 +27,7 @@ import com.merchpulse.shared.feature.auth.SignInEffect
 import com.merchpulse.shared.feature.auth.SignInIntent
 import org.koin.compose.koinInject
 import com.merchpulse.core.designsystem.AppResources as Res
+import com.merchpulse.core.designsystem.component.MerchPulseLogo
 
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.merchpulse.core.designsystem.theme.LocalWindowSizeClass
@@ -71,20 +72,10 @@ fun SignInScreen(
             ) {
                 Spacer(Modifier.height(48.dp))
 
-                // Top Icon Box
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Inventory,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
+                // Top Logo
+                MerchPulseLogo(
+                    modifier = Modifier.size(100.dp)
+                )
 
                 Spacer(Modifier.height(24.dp))
 
@@ -325,12 +316,9 @@ fun SignInScreen(
 
                 Spacer(Modifier.height(48.dp))
 
-                // Footer Logo and reCAPTCHA
-                Icon(
-                    Icons.Default.Face,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp)
+                // Footer Logo
+                MerchPulseLogo(
+                    modifier = Modifier.size(50.dp)
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
