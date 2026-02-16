@@ -20,6 +20,9 @@ class SettingsViewModel(
     val language: StateFlow<String> = preferencesManager.languageStream
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "en")
 
+    val biometricEnabled: StateFlow<Boolean> = preferencesManager.biometricEnabledStream
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun setTheme(theme: String) {
         preferencesManager.setString("theme", theme)
     }

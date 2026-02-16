@@ -3,6 +3,8 @@ package com.merchpulse.feature.auth.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.merchpulse.core.common.DispatcherProvider
+import com.merchpulse.core.common.PreferencesManager
+import com.merchpulse.shared.domain.model.Employee
 import com.merchpulse.shared.domain.repository.EmployeeRepository
 import com.merchpulse.shared.domain.repository.SessionManager
 import com.merchpulse.shared.feature.auth.SignInEffect
@@ -18,8 +20,15 @@ import kotlinx.coroutines.launch
 class SignInViewModel(
     private val employeeRepository: EmployeeRepository,
     private val sessionManager: SessionManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
+
+    val isBiometricEnabled: Boolean
+        get() = preferencesManager.getBoolean("biometric_enabled", false)
+
+    val hasLastUser: Boolean
+        get() = preferencesManager.getString("last_employee_id", "").isNotEmpty()
 
     private val _state = MutableStateFlow(SignInState())
     val state = _state.asStateFlow()
@@ -60,6 +69,7 @@ class SignInViewModel(
             if (employee != null) {
                 val verified = employeeRepository.verifyPin(employee.id, pin)
                 if (verified) {
+                    preferencesManager.setString("last_employee_id", employee.id)
                     sessionManager.startSession(employee)
                     _effect.send(SignInEffect.NavigateToHome)
                 } else {
@@ -67,6 +77,28 @@ class SignInViewModel(
                 }
             } else {
                 _state.value = _state.value.copy(isLoading = false, error = "User not found")
+            }
+        }
+    }
+
+    fun onBiometricSuccess() {
+        viewModelScope.launch(dispatcherProvider.io) {
+            val lastEmployeeId = preferencesManager.getString("last_employee_id", "")
+            if (lastEmployeeId.isEmpty()) {
+                _state.value = _state.value.copy(error = "No biometric profile found. Please login with password first.")
+                return@launch
+            }
+
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            
+            // In a real app, you'd verify against a secure token. 
+            // For now, get the employee by ID.
+            val employee = employeeRepository.getEmployeeById(lastEmployeeId).first()
+            if (employee != null) {
+                sessionManager.startSession(employee)
+                _effect.send(SignInEffect.NavigateToHome)
+            } else {
+                _state.value = _state.value.copy(isLoading = false, error = "Account not found")
             }
         }
     }

@@ -16,6 +16,6 @@ val authModule = module {
     single<com.merchpulse.shared.domain.repository.AuditRepository> { com.merchpulse.feature.auth.data.AuditRepositoryImpl(get(), get(), get()) }
     single { AuthorizationPolicy(get()) }
     
-    viewModel { SignInViewModel(get(), get(), get()) }
+    viewModel { SignInViewModel(get(), get(), get(), get()) }
     viewModel { SignUpViewModel(get(), get(), get()) }
 }
