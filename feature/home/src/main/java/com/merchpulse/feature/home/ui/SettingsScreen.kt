@@ -139,16 +139,17 @@ fun SettingsScreen(
             // Security Section
             SettingsSection(title = stringResource(R.string.security)) {
                 SettingsToggleItem(
-                    icon = Icons.Default.Fingerprint,
+                    icon = Icons.Default.Face,
                     title = stringResource(R.string.biometric_login),
                     description = "Secure login using your face or fingerprint",
                     checked = biometricEnabled,
                     onCheckedChange = { enabled ->
                         if (enabled) {
-                            BiometricUtils.authenticate(context) { success ->
+                            BiometricUtils.authenticate(context) { success, _ ->
                                 if (success) viewModel.setBiometricEnabled(true)
                             }
                         } else {
+
                             viewModel.setBiometricEnabled(false)
                         }
                     },

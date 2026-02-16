@@ -18,20 +18,32 @@
     <string name="alert">Alert</string>
 
     <!-- Sign In Screen -->
+    <string name="welcome_back">Welcome Back</string>
+    <string name="sign_in_subtitle">Sign in to manage your inventory</string>
     <string name="merchant_portal">Merchant Portal</string>
     <string name="manage_business">Manage your electronics business</string>
     <string name="login">Login</string>
     <string name="sign_up">Sign Up</string>
     <string name="phone_number">PHONE NUMBER</string>
     <string name="phone_placeholder">111 222 3333</string>
-    <string name="password">PASSWORD</string>
+    <string name="password_label_upper">PASSWORD</string>
+    <string name="forgot_upper">FORGOT?</string>
     <string name="enter_password">Enter your password</string>
     <string name="forgot_password">Forgot Password?</string>
     <string name="sign_in">Sign In</string>
+    <string name="sign_in_faceid">Sign in with FaceID</string>
+    <string name="faster_access">Faster access to dashboard</string>
     <string name="recaptcha_line1">Protected by reCAPTCHA and subject to the</string>
     <string name="recaptcha_line2">Privacy Policy and Terms of Service.</string>
 
     <!-- Sign Up Screen -->
+    <string name="create_account_title">Create Account</string>
+    <string name="join_team_merchpulse">Join your team on MerchPulse</string>
+    <string name="full_name_label_upper">FULL NAME</string>
+    <string name="phone_number_label_upper">PHONE NUMBER</string>
+    <string name="workplace_role_label_upper">WORKPLACE ROLE</string>
+    <string name="enable_faceid">Enable FaceID</string>
+    <string name="biometric_subtitle">Secure your account with biometric login</string>
     <string name="join_team">Join the Team</string>
     <string name="sign_up_subtitle">Create your employee account to manage\ninventory, track time, and access sales tools.</string>
     <string name="full_legal_name">Full Legal Name</string>
@@ -50,6 +62,9 @@
     <string name="agree_terms_and"> and </string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="request_account">Request Account</string>
+    <string name="dont_have_account_prefix">Don\'t have an account? </string>
+    <string name="already_have_account_prefix">Already have an account? </string>
+    <string name="log_in_label">Log In</string>
     <string name="already_have_account">Already have an account? Log In</string>
 
     <!-- Home Screen -->

@@ -43,7 +43,6 @@ fun SignInScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var loginMethod by remember { mutableStateOf("password") }
     val windowSizeClass = LocalWindowSizeClass.current
     val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
     val isMedium = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Medium
@@ -69,375 +68,344 @@ fun SignInScreen(
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(max = if (isExpanded) 480.dp else if (isMedium) 400.dp else 600.dp)
-                    .padding(horizontal = 24.dp, vertical = 32.dp)
+                    .widthIn(max = if (isExpanded) 480.dp else if (isMedium) 420.dp else 600.dp)
+                    .padding(horizontal = 32.dp, vertical = 24.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(48.dp))
+                Spacer(Modifier.height(32.dp))
 
-                // Top Logo
-                MerchPulseLogo(
-                    modifier = Modifier.size(100.dp)
-                )
+                // Logo Container
+                Surface(
+                    modifier = Modifier.size(80.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        MerchPulseLogo(modifier = Modifier.size(45.dp))
+                    }
+                }
 
                 Spacer(Modifier.height(24.dp))
 
                 // Titles
                 Text(
-                    stringResource(Res.string.merchant_portal),
-                    style = MaterialTheme.typography.headlineLarge,
+                    text = stringResource(Res.string.welcome_back),
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+                
                 Spacer(Modifier.height(8.dp))
+                
                 Text(
-                    stringResource(Res.string.manage_business),
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = stringResource(Res.string.sign_in_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(40.dp))
 
-                // Login/Sign Up Switcher
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface
+                // --- Form Fields ---
+                
+                // Phone Number
+                AuthLabel(stringResource(Res.string.phone_number_label_upper))
+                Spacer(Modifier.height(8.dp))
+                PhoneInput(
+                    phoneNumber = state.phoneNumber,
+                    countryCode = state.countryCode,
+                    onPhoneChange = { viewModel.handleIntent(SignInIntent.PhoneNumberChanged(it)) },
+                    onCountryChange = { viewModel.handleIntent(SignInIntent.CountryCodeChanged(it)) }
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                // Password
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
-                        // Sliding background
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.5f)
-                                .fillMaxHeight()
-                                .shadow(1.dp, RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.onPrimary, RoundedCornerShape(12.dp))
-                        )
-
-                        Row(modifier = Modifier.fillMaxSize()) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(stringResource(Res.string.login), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable { onNavigateToSignUp() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(stringResource(Res.string.sign_up), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(32.dp))
-
-                // Login Method Switcher
-                if (viewModel.isBiometricEnabled && viewModel.hasLastUser) {
-                    TabRow(
-                        selectedTabIndex = if (loginMethod == "password") 0 else 1,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp)),
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        indicator = { tabPositions ->
-                            if (tabPositions.isNotEmpty()) {
-                                TabRowDefaults.SecondaryIndicator(
-                                    modifier = Modifier.tabIndicatorOffset(tabPositions[if (loginMethod == "password") 0 else 1]),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        },
-                        divider = {}
-                    ) {
-                        Tab(
-                            selected = loginMethod == "password",
-                            onClick = { loginMethod = "password" },
-                            text = { Text("Password", fontWeight = if (loginMethod == "password") FontWeight.Bold else FontWeight.Normal) }
-                        )
-                        Tab(
-                            selected = loginMethod == "biometric",
-                            onClick = { loginMethod = "biometric" },
-                            text = { Text("Biometric", fontWeight = if (loginMethod == "biometric") FontWeight.Bold else FontWeight.Normal) }
-                        )
-                    }
-                    Spacer(Modifier.height(32.dp))
-                }
-
-                if (loginMethod == "password") {
-                    // Phone Number Input
-                    var isCountryDropdownExpanded by remember { mutableStateOf(false) }
-                    
-                    data class Country(val flag: String, val code: String, val maxLength: Int)
-                    
-                    val countries = listOf(
-                        Country("\uD83C\uDDEA\uD83C\uDDEC", "+20", 11),  // Egypt
-                        Country("\uD83C\uDDFA\uD83C\uDDF8", "+1", 10),   // US
-                        Country("\uD83C\uDDF8\uD83C\uDDE6", "+966", 9),  // KSA
-                        Country("\uD83C\uDDE6\uD83C\uDDEA", "+971", 9)   // UAE
+                    AuthLabel(stringResource(Res.string.password_label_upper))
+                    Text(
+                        text = stringResource(Res.string.forgot_upper),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 0.5.sp,
+                        modifier = Modifier.clickable { /* Handle Forgot */ }
                     )
-
-                    val currentCountry = countries.find { it.code == state.countryCode } ?: countries[0]
-
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            stringResource(Res.string.phone_number),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = state.phoneNumber,
-                            onValueChange = { input ->
-                                if (input.length <= currentCountry.maxLength && input.all { it.isDigit() }) {
-                                    viewModel.handleIntent(SignInIntent.PhoneNumberChanged(input))
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            placeholder = { Text(stringResource(Res.string.phone_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            leadingIcon = {
-                                Box {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clickable { isCountryDropdownExpanded = true }
-                                            .padding(start = 12.dp, end = 8.dp)
-                                    ) {
-                                        Text(currentCountry.flag, fontSize = 18.sp)
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(state.countryCode, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
-                                        Icon(
-                                            Icons.Default.KeyboardArrowDown,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        VerticalDivider(
-                                            modifier = Modifier
-                                                .height(24.dp)
-                                                .width(1.dp),
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = isCountryDropdownExpanded,
-                                        onDismissRequest = { isCountryDropdownExpanded = false },
-                                        modifier = Modifier.background(MaterialTheme.colorScheme.background)
-                                    ) {
-                                        countries.forEach { country ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Text(country.flag, fontSize = 20.sp)
-                                                        Spacer(Modifier.width(12.dp))
-                                                        Text(country.code, color = MaterialTheme.colorScheme.onBackground)
-                                                    }
-                                                },
-                                                onClick = {
-                                                    viewModel.handleIntent(SignInIntent.CountryCodeChanged(country.code))
-                                                    isCountryDropdownExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                        )
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Password Input
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            stringResource(Res.string.password),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = state.pin,
-                            onValueChange = { viewModel.handleIntent(SignInIntent.PinChanged(it)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            placeholder = { Text(stringResource(Res.string.enter_password), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                    Icon(
-                                        imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        )
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                        Text(
-                            stringResource(Res.string.forgot_password),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable {  }
-                        )
-                    }
-
-                    Spacer(Modifier.height(32.dp))
-
-                    if (state.error != null) {
-                        Text(state.error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                        Spacer(Modifier.height(16.dp))
-                    }
-
-                    // Sign In Button
-                    Button(
-                        onClick = { viewModel.handleIntent(SignInIntent.Submit) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(12.dp), spotColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        enabled = !state.isLoading
-                    ) {
-                        if (state.isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(stringResource(Res.string.sign_in), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Spacer(Modifier.width(8.dp))
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                } else {
-                    // Biometric Login Card
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(32.dp)
-                                .fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(80.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.Default.Fingerprint,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(40.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            
-                            Spacer(Modifier.height(24.dp))
-                            
-                            Text(
-                                "Quick Access",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            
-                            Spacer(Modifier.height(8.dp))
-                            
-                            Text(
-                                "Use your biometric data to sign in safely and quickly.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                            
-                            Spacer(Modifier.height(32.dp))
-                            
-                            Button(
-                                onClick = onBiometricLoginClick,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Fingerprint, null)
-                                    Spacer(Modifier.width(12.dp))
-                                    Text("Start Authentication", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
                 }
+                Spacer(Modifier.height(8.dp))
+                AuthTextField(
+                    value = state.pin,
+                    onValueChange = { viewModel.handleIntent(SignInIntent.PinChanged(it)) },
+                    placeholder = "••••••••",
+                    leadingIcon = Icons.Default.Lock,
+                    isPassword = true,
+                    isPasswordVisible = isPasswordVisible,
+                    onToggleVisibility = { isPasswordVisible = !isPasswordVisible }
+                )
 
-                Spacer(Modifier.height(32.dp))
-
-                if (loginMethod == "password") {
-                     // Footer Logo
-                    MerchPulseLogo(
-                        modifier = Modifier.size(50.dp)
-                    )
+                if (state.error != null) {
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        stringResource(Res.string.recaptcha_line1),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        stringResource(Res.string.recaptcha_line2),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = state.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
-                
-                Spacer(Modifier.height(16.dp))
+
+                Spacer(Modifier.height(32.dp))
+
+                // Biometrics Access Option (Tile)
+                if (viewModel.isBiometricEnabled && viewModel.hasLastUser) {
+                    BiometricLoginTile(
+                        onClick = onBiometricLoginClick
+                    )
+                    Spacer(Modifier.height(32.dp))
+                }
+
+                // Sign In Button
+                Button(
+                    onClick = { viewModel.handleIntent(SignInIntent.Submit) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    enabled = !state.isLoading
+                ) {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text(
+                            text = stringResource(Res.string.sign_in),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(32.dp))
+
+                // Footer
+                Row(
+                    modifier = Modifier.clickable { onNavigateToSignUp() },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(Res.string.dont_have_account_prefix),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = stringResource(Res.string.sign_up),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(Modifier.height(48.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun AuthLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        letterSpacing = 1.sp
+    )
+}
+
+@Composable
+private fun AuthTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    isPassword: Boolean = false,
+    isPasswordVisible: Boolean = false,
+    onToggleVisibility: () -> Unit = {}
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+        leadingIcon = {
+            Icon(leadingIcon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        },
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(onClick = onToggleVisibility) {
+                    Icon(
+                        imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else null,
+        visualTransformation = if (isPassword && !isPasswordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.outline,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+        )
+    )
+}
+
+@Composable
+private fun PhoneInput(
+    phoneNumber: String,
+    countryCode: String,
+    onPhoneChange: (String) -> Unit,
+    onCountryChange: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    data class Country(val flag: String, val code: String, val name: String, val length: Int)
+    val countries = listOf(
+        Country("\uD83C\uDDEA\uD83C\uDDEC", "+20", "Egypt", 11),
+        Country("\uD83C\uDDFA\uD83C\uDDF8", "+1", "United States", 10),
+        Country("\uD83C\uDDF8\uD83C\uDDE6", "+966", "Saudi Arabia", 9),
+        Country("\uD83C\uDDE6\uD83C\uDDEA", "+971", "United Arab Emirates", 9)
+    )
+    val selectedCountry = countries.find { it.code == countryCode } ?: countries[0]
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Country Selector
+        Surface(
+            modifier = Modifier
+                .width(100.dp)
+                .height(56.dp)
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(selectedCountry.flag, fontSize = 18.sp)
+                Text(selectedCountry.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            }
+
+            DropdownMenu(
+                expanded = expanded, 
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            ) {
+                countries.forEach { country ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(country.flag, fontSize = 20.sp)
+                                Spacer(Modifier.width(12.dp))
+                                Text("${country.name} (${country.code})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        },
+                        onClick = {
+                            onCountryChange(country.code)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // Phone Number
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = { if (it.length <= selectedCountry.length) onPhoneChange(it) },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(14.dp),
+            placeholder = { Text("(555) 000-0000", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+            ),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+            ),
+            visualTransformation = PhoneVisualTransformation(selectedCountry.length)
+        )
+    }
+}
+
+@Composable
+private fun BiometricLoginTile(
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Face, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                }
+            }
+            
+            Spacer(Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.sign_in_faceid),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(Res.string.faster_access),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                null, 
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

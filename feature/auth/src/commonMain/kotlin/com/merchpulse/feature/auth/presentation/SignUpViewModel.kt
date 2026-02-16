@@ -14,6 +14,7 @@ import com.merchpulse.shared.feature.auth.SignUpState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -53,10 +54,6 @@ class SignUpViewModel(
                 _state.value = s.copy(error = "Full Name, Phone, and Password are required")
                 return@launch
             }
-            if (!s.isTermsAccepted) {
-                _state.value = s.copy(error = "You must agree to the Terms & Conditions")
-                return@launch
-            }
             if (s.pin.length < 4) { // Basic validation
                 _state.value = s.copy(error = "Password must be at least 4 characters")
                 return@launch
@@ -64,29 +61,53 @@ class SignUpViewModel(
 
             _state.value = s.copy(isLoading = true, error = null)
 
-            val newEmployee = Employee(
-                id = UUID.randomUUID().toString(),
-                email = s.email.trim(),
-                phoneNumber = s.phoneNumber.trim(),
-                fullName = s.fullName.trim(),
-                role = s.selectedRole,
-                permissions = if (s.selectedRole == Role.MANAGER) {
-                    Permission.entries.toSet() 
-                } else {
-                    setOf(Permission.PUNCH_SELF, Permission.PRODUCT_VIEW)
-                },
-                isActive = false, // Design says "Requires Approval"
-                joinedAt = Clock.System.now()
-            )
+            // Validation by country
+            val expectedLength = when (s.countryCode) {
+                "+20" -> 11
+                "+1" -> 10
+                "+966", "+971" -> 9
+                else -> 10
+            }
 
-            val result = employeeRepository.createEmployee(newEmployee, s.pin)
-            if (result.isSuccess) {
-                sessionManager.startSession(newEmployee)
-                _effect.send(SignUpEffect.NavigateToHome)
-            } else {
+            if (s.phoneNumber.trim().length != expectedLength) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = result.exceptionOrNull()?.message ?: "Registration failed"
+                    error = "Phone number must be $expectedLength digits for this country"
+                )
+                return@launch
+            }
+
+            try {
+                val newEmployee = Employee(
+                    id = UUID.randomUUID().toString(),
+                    email = s.email.trim(),
+                    phoneNumber = s.phoneNumber.trim(),
+                    fullName = s.fullName.trim(),
+                    role = s.selectedRole,
+                    permissions = if (s.selectedRole == Role.MANAGER) {
+                        Permission.entries.toSet()
+                    } else {
+                        setOf(Permission.PUNCH_SELF, Permission.PRODUCT_VIEW)
+                    },
+                    isActive = false, // Design says "Requires Approval"
+                    joinedAt = Clock.System.now()
+                )
+
+                val result = employeeRepository.createEmployee(newEmployee, s.pin)
+                if (result.isSuccess) {
+                    sessionManager.startSession(newEmployee)
+                    _state.value = _state.value.copy(isLoading = false)
+                    _effect.send(SignUpEffect.NavigateToHome)
+                } else {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message ?: "Registration failed"
+                    )
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "An unexpected error occurred"
                 )
             }
         }

@@ -7,18 +7,30 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 @OptIn(ExperimentalResourceApi::class)
 object AppResources {
     object string {
+        val welcome_back = Res.string.welcome_back
+        val sign_in_subtitle = Res.string.sign_in_subtitle
         val merchant_portal = Res.string.merchant_portal
         val manage_business = Res.string.manage_business
         val login = Res.string.login
         val sign_up = Res.string.sign_up
         val phone_number = Res.string.phone_number
+        val phone_number_label_upper = Res.string.phone_number_label_upper
         val phone_placeholder = Res.string.phone_placeholder
-        val password = Res.string.password
+        val password_label_upper = Res.string.password_label_upper
+        val forgot_upper = Res.string.forgot_upper
         val enter_password = Res.string.enter_password
         val forgot_password = Res.string.forgot_password
         val sign_in = Res.string.sign_in
+        val sign_in_faceid = Res.string.sign_in_faceid
+        val faster_access = Res.string.faster_access
         val recaptcha_line1 = Res.string.recaptcha_line1
         val recaptcha_line2 = Res.string.recaptcha_line2
+        val create_account_title = Res.string.create_account_title
+        val join_team_merchpulse = Res.string.join_team_merchpulse
+        val full_name_label_upper = Res.string.full_name_label_upper
+        val workplace_role_label_upper = Res.string.workplace_role_label_upper
+        val enable_faceid = Res.string.enable_faceid
+        val biometric_subtitle = Res.string.biometric_subtitle
         val join_team = Res.string.join_team
         val sign_up_subtitle = Res.string.sign_up_subtitle
         val full_legal_name = Res.string.full_legal_name
@@ -37,6 +49,9 @@ object AppResources {
         val agree_terms_and = Res.string.agree_terms_and
         val privacy_policy = Res.string.privacy_policy
         val request_account = Res.string.request_account
+        val dont_have_account_prefix = Res.string.dont_have_account_prefix
+        val already_have_account_prefix = Res.string.already_have_account_prefix
+        val log_in_label = Res.string.log_in_label
         val already_have_account = Res.string.already_have_account
     }
 }

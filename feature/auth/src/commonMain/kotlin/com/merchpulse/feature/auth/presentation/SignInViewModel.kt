@@ -58,48 +58,87 @@ class SignInViewModel(
 
             _state.value = _state.value.copy(isLoading = true, error = null)
 
-            // In a real app, combine country code with phone
-            val fullPhone = "$countryCode$phone"
-            
-            // For now, search by the number provided in the database
-            // (Assuming the seeder or creation logic stores it consistently)
-            val employee = employeeRepository.getEmployeeByPhone(phone).first() 
-                ?: employeeRepository.getEmployeeByPhone(fullPhone).first()
+            // Validation by country
+            val expectedLength = when (countryCode) {
+                "+20" -> 11
+                "+1" -> 10
+                "+966", "+971" -> 9
+                else -> 10
+            }
 
-            if (employee != null) {
-                val verified = employeeRepository.verifyPin(employee.id, pin)
-                if (verified) {
-                    preferencesManager.setString("last_employee_id", employee.id)
-                    sessionManager.startSession(employee)
-                    _effect.send(SignInEffect.NavigateToHome)
+            if (phone.length != expectedLength) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = "Phone number must be $expectedLength digits for this country"
+                )
+                return@launch
+            }
+
+            try {
+                // In a real app, combine country code with phone
+                val fullPhone = "$countryCode$phone"
+                
+                // For now, search by the number provided in the database
+                // (Assuming the seeder or creation logic stores it consistently)
+                val employee = employeeRepository.getEmployeeByPhone(phone).first() 
+                    ?: employeeRepository.getEmployeeByPhone(fullPhone).first()
+
+                if (employee != null) {
+                    val verified = employeeRepository.verifyPin(employee.id, pin)
+                    if (verified) {
+                        preferencesManager.setString("last_employee_id", employee.id)
+                        sessionManager.startSession(employee)
+                        _state.value = _state.value.copy(isLoading = false)
+                        _effect.send(SignInEffect.NavigateToHome)
+                    } else {
+                        _state.value = _state.value.copy(isLoading = false, error = "Invalid Password")
+                    }
                 } else {
-                    _state.value = _state.value.copy(isLoading = false, error = "Invalid Password")
+                    _state.value = _state.value.copy(isLoading = false, error = "User not found")
                 }
-            } else {
-                _state.value = _state.value.copy(isLoading = false, error = "User not found")
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false, 
+                    error = e.message ?: "An unexpected error occurred"
+                )
             }
         }
     }
 
     fun onBiometricSuccess() {
         viewModelScope.launch(dispatcherProvider.io) {
-            val lastEmployeeId = preferencesManager.getString("last_employee_id", "")
-            if (lastEmployeeId.isEmpty()) {
-                _state.value = _state.value.copy(error = "No biometric profile found. Please login with password first.")
-                return@launch
-            }
+            try {
+                val lastEmployeeId = preferencesManager.getString("last_employee_id", "")
+                if (lastEmployeeId.isEmpty()) {
+                    _state.value = _state.value.copy(error = "No biometric profile found. Please login with password first.")
+                    return@launch
+                }
 
-            _state.value = _state.value.copy(isLoading = true, error = null)
-            
-            // In a real app, you'd verify against a secure token. 
-            // For now, get the employee by ID.
-            val employee = employeeRepository.getEmployeeById(lastEmployeeId).first()
-            if (employee != null) {
-                sessionManager.startSession(employee)
-                _effect.send(SignInEffect.NavigateToHome)
-            } else {
-                _state.value = _state.value.copy(isLoading = false, error = "Account not found")
+                _state.value = _state.value.copy(isLoading = true, error = null)
+                
+                // In a real app, you'd verify against a secure token. 
+                // For now, get the employee by ID.
+                val employee = employeeRepository.getEmployeeById(lastEmployeeId).first()
+                if (employee != null) {
+                    sessionManager.startSession(employee)
+                    _state.value = _state.value.copy(isLoading = false)
+                    _effect.send(SignInEffect.NavigateToHome)
+                } else {
+                    _state.value = _state.value.copy(isLoading = false, error = "Account not found")
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false, 
+                    error = e.message ?: "Biometric login failed"
+                )
             }
         }
     }
+
+    fun onBiometricError(error: String?) {
+        if (error != null) {
+            _state.value = _state.value.copy(error = error, isLoading = false)
+        }
+    }
+
 }

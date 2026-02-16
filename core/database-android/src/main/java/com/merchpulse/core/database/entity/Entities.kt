@@ -41,9 +41,13 @@ data class EmployeeEntity(
     val fullName: String,
     val role: String,
     val isActive: Boolean,
+    val isOnShift: Boolean,
+    val lastPunchTime: Long?,
+    val avatarUrl: String?,
     val joinedAt: Long,
     val pinHash: String
 )
+
 
 @Entity(
     tableName = "employee_permissions",

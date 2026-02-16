@@ -22,7 +22,7 @@ import com.merchpulse.core.database.entity.PunchEntity
         PunchEntity::class,
         AuditEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -93,6 +93,9 @@ private fun Employee.toEntity(pinHash: String): EmployeeEntity {
         fullName = fullName,
         role = role.name,
         isActive = isActive,
+        isOnShift = false,
+        lastPunchTime = null,
+        avatarUrl = null,
         joinedAt = joinedAt.toEpochMilliseconds(),
         pinHash = pinHash
     )

@@ -60,12 +60,15 @@ fun MerchPulseNavHost(
                 },
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                 onBiometricLoginClick = {
-                    BiometricUtils.authenticate(context) { success ->
+                    BiometricUtils.authenticate(context) { success, error ->
                         if (success) {
                             viewModel.onBiometricSuccess()
+                        } else {
+                            viewModel.onBiometricError(error)
                         }
                     }
                 }
+
             )
         }
         
