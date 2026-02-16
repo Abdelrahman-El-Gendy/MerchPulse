@@ -1,9 +1,7 @@
 package com.merchpulse.feature.home.ui
 
 import android.content.Context
-import android.content.ContextWrapper
-import androidx.appcompat.app.AppCompatActivity
-import androidx.biometric.BiometricPrompt
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
+import com.merchpulse.core.common.BiometricUtils
 import com.merchpulse.core.designsystem.R
 import com.merchpulse.feature.home.presentation.SettingsViewModel
 import com.merchpulse.core.designsystem.component.MerchPulseLogo
@@ -41,12 +39,14 @@ fun SettingsScreen(
     val context = LocalContext.current
     val themeMode by viewModel.theme.collectAsState()
     val language by viewModel.language.collectAsState()
+    val biometricEnabled by viewModel.biometricEnabled.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
 
     val appVersion = remember {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            "${pInfo.versionName} (${pInfo.versionCode})"
+            val versionCode = PackageInfoCompat.getLongVersionCode(pInfo)
+            "${pInfo.versionName} ($versionCode)"
         } catch (e: Exception) {
             "1.0.0 (1)"
         }
@@ -108,10 +108,13 @@ fun SettingsScreen(
                 SettingsToggleItem(
                     icon = Icons.Default.NightsStay,
                     title = stringResource(R.string.dark_mode),
+                    description = if (themeMode == "dark") "Using dark theme" else "Using light theme",
                     checked = themeMode == "dark",
                     onCheckedChange = { isDark ->
                         viewModel.setTheme(if (isDark) "dark" else "light")
-                    }
+                    },
+                    checkedIcon = Icons.Default.DarkMode,
+                    uncheckedIcon = Icons.Default.LightMode
                 )
             }
 
@@ -138,16 +141,19 @@ fun SettingsScreen(
                 SettingsToggleItem(
                     icon = Icons.Default.Fingerprint,
                     title = stringResource(R.string.biometric_login),
-                    checked = viewModel.getBiometricEnabled(),
+                    description = "Secure login using your face or fingerprint",
+                    checked = biometricEnabled,
                     onCheckedChange = { enabled ->
                         if (enabled) {
-                            authenticateWithBiometric(context) { success ->
+                            BiometricUtils.authenticate(context) { success ->
                                 if (success) viewModel.setBiometricEnabled(true)
                             }
                         } else {
                             viewModel.setBiometricEnabled(false)
                         }
-                    }
+                    },
+                    checkedIcon = Icons.Default.Check,
+                    uncheckedIcon = Icons.Default.Lock
                 )
                 SettingsItem(
                     icon = Icons.Default.Devices,
@@ -187,11 +193,11 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.language)) },
             text = {
                 Column {
-                    LanguageOption("en", "English (US)", language == "en") {
+                    LanguageOption("English (US)", language == "en") {
                         viewModel.setLanguage("en")
                         showLanguageDialog = false
                     }
-                    LanguageOption("ar", "العربية (Arabic)", language == "ar") {
+                    LanguageOption("العربية (Arabic)", language == "ar") {
                         viewModel.setLanguage("ar")
                         showLanguageDialog = false
                     }
@@ -204,7 +210,6 @@ fun SettingsScreen(
 
 @Composable
 fun LanguageOption(
-    code: String,
     label: String,
     selected: Boolean,
     onClick: () -> Unit
@@ -220,42 +225,6 @@ fun LanguageOption(
         Spacer(modifier = Modifier.width(8.dp))
         Text(label, style = MaterialTheme.typography.bodyMedium)
     }
-}
-
-private fun authenticateWithBiometric(context: Context, onResult: (Boolean) -> Unit) {
-    val activity = context.findActivity() ?: return
-    val executor = ContextCompat.getMainExecutor(context)
-    val biometricPrompt = BiometricPrompt(activity, executor,
-        object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                super.onAuthenticationSucceeded(result)
-                onResult(true)
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                super.onAuthenticationError(errorCode, errString)
-                onResult(false)
-            }
-
-            override fun onAuthenticationFailed() {
-                super.onAuthenticationFailed()
-                onResult(false)
-            }
-        })
-
-    val promptInfo = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Biometric Login")
-        .setSubtitle("Log in using your biometric credential")
-        .setNegativeButtonText("Cancel")
-        .build()
-
-    biometricPrompt.authenticate(promptInfo)
-}
-
-private fun Context.findActivity(): AppCompatActivity? = when (this) {
-    is AppCompatActivity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
 
 @Composable
@@ -392,8 +361,11 @@ fun SettingsItem(
 fun SettingsToggleItem(
     icon: ImageVector,
     title: String,
+    description: String? = null,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    checkedIcon: ImageVector? = null,
+    uncheckedIcon: ImageVector? = null
 ) {
     Row(
         modifier = Modifier
@@ -418,21 +390,49 @@ fun SettingsToggleItem(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (description != null) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
 
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            thumbContent = if (checked && checkedIcon != null) {
+                {
+                    Icon(
+                        imageVector = checkedIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                    )
+                }
+            } else if (!checked && uncheckedIcon != null) {
+                {
+                    Icon(
+                        imageVector = uncheckedIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                    )
+                }
+            } else null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                checkedIconColor = MaterialTheme.colorScheme.primary,
+                uncheckedIconColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
     }

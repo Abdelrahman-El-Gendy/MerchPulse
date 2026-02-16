@@ -11,4 +11,5 @@ interface PreferencesManager {
     // For flow-based updates if needed later
     val themeStream: Flow<String>
     val languageStream: Flow<String>
+    val biometricEnabledStream: Flow<Boolean>
 }

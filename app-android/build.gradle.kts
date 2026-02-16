@@ -69,4 +69,5 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
+    implementation(libs.androidx.biometric)
 }

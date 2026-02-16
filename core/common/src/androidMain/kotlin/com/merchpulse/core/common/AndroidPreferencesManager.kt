@@ -15,6 +15,9 @@ class AndroidPreferencesManager(context: Context) : PreferencesManager {
     private val _languageStream = MutableStateFlow(getString("language", "en"))
     override val languageStream: Flow<String> = _languageStream.asStateFlow()
 
+    private val _biometricStream = MutableStateFlow(getBoolean("biometric_enabled", false))
+    override val biometricEnabledStream: Flow<Boolean> = _biometricStream.asStateFlow()
+
     override fun getString(key: String, defaultValue: String): String = prefs.getString(key, defaultValue) ?: defaultValue
     
     override fun setString(key: String, value: String) {
@@ -25,5 +28,8 @@ class AndroidPreferencesManager(context: Context) : PreferencesManager {
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean = prefs.getBoolean(key, defaultValue)
     
-    override fun setBoolean(key: String, value: Boolean) = prefs.edit().putBoolean(key, value).apply()
+    override fun setBoolean(key: String, value: Boolean) {
+        prefs.edit().putBoolean(key, value).apply()
+        if (key == "biometric_enabled") _biometricStream.value = value
+    }
 }

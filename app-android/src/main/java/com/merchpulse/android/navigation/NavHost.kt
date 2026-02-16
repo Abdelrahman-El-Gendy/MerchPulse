@@ -11,6 +11,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.merchpulse.feature.employees.ui.EmployeeListScreen
 import com.merchpulse.android.ui.SplashScreen
+import com.merchpulse.core.common.BiometricUtils
+import androidx.compose.ui.platform.LocalContext
 import com.merchpulse.feature.auth.ui.SignInScreen
 import com.merchpulse.feature.auth.ui.SignUpScreen
 import com.merchpulse.feature.home.ui.HomeScreen
@@ -20,6 +22,8 @@ import com.merchpulse.feature.products.ui.ProductFormScreen
 import com.merchpulse.feature.stock.ui.LowStockScreen
 import com.merchpulse.feature.punching.ui.PunchScreen
 import com.merchpulse.feature.punching.ui.TeamPunchScreen
+import com.merchpulse.feature.auth.presentation.SignInViewModel
+import org.koin.compose.koinInject
 
 @Composable
 fun MerchPulseNavHost(
@@ -45,13 +49,23 @@ fun MerchPulseNavHost(
         }
         
         composable(Screen.SignIn.route) {
+            val context = LocalContext.current
+            val viewModel: SignInViewModel = koinInject()
             SignInScreen(
+                viewModel = viewModel,
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.SignIn.route) { inclusive = true }
                     }
                 },
-                onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) }
+                onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
+                onBiometricLoginClick = {
+                    BiometricUtils.authenticate(context) { success ->
+                        if (success) {
+                            viewModel.onBiometricSuccess()
+                        }
+                    }
+                }
             )
         }
         

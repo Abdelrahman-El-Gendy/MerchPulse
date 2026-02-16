@@ -21,6 +21,8 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.coroutines.android)
             implementation(libs.koin.android)
+            implementation(libs.androidx.biometric)
+            implementation(libs.androidx.appcompat)
         }
     }
 }
