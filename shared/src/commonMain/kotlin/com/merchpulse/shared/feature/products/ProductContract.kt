@@ -18,7 +18,8 @@ data class ProductsState(
     val error: String? = null,
     val showLowStockOnly: Boolean = false,
     val searchQuery: String = "",
-    val statusFilter: ProductStatus? = null
+    val statusFilter: ProductStatus? = null,
+    val permissions: Set<com.merchpulse.shared.domain.model.Permission> = emptySet()
 ) : UiState
 
 sealed class ProductsIntent : UiIntent {
@@ -53,7 +54,8 @@ data class ProductFormState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val auditReason: AuditReason = AuditReason.RESTOCK,
-    val adjustmentNote: String = ""
+    val adjustmentNote: String = "",
+    val permissions: Set<com.merchpulse.shared.domain.model.Permission> = emptySet()
 ) : UiState
 
 sealed class ProductFormIntent : UiIntent {

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common / Shared -->
+    <string name="back">رجوع</string>
+    <string name="notifications">الإشعارات</string>
+    <string name="filter">تصفية</string>
+    <string name="options">خيارات</string>
+    <string name="more">المزيد</string>
+    <string name="cancel">إلغاء</string>
+    <string name="add">إضافة</string>
+    <string name="select_date">اختر التاريخ</string>
+    <string name="view_all">عرض الكل</string>
+    <string name="date_label">التاريخ</string>
+    <string name="sku_label">رمز المنتج: %1$s</string>
+    <string name="in_label">دخول</string>
+    <string name="out_label">خروج</string>
+    <string name="time_placeholder">--:--</string>
+    <string name="alert">تنبيه</string>
+
+    <!-- Sign In Screen -->
+    <string name="welcome_back">مرحباً بعودتك</string>
+    <string name="sign_in_subtitle">سجل دخولك لإدارة مخزونك</string>
+    <string name="merchant_portal">بوابة التاجر</string>
+    <string name="manage_business">إدارة أعمالك الإلكترونية</string>
+    <string name="login">تسجيل الدخول</string>
+    <string name="sign_up">إنشاء حساب</string>
+    <string name="phone_number">رقم الهاتف</string>
+    <string name="phone_placeholder">111 222 3333</string>
+    <string name="password_label_upper">كلمة المرور</string>
+    <string name="forgot_upper">نسيت؟</string>
+    <string name="enter_password">أدخل كلمة المرور</string>
+    <string name="forgot_password">هل نسيت كلمة المرور؟</string>
+    <string name="sign_in">تسجيل الدخول</string>
+    <string name="sign_in_faceid">سجل الدخول باستخدام FaceID</string>
+    <string name="faster_access">وصول أسرع إلى لوحة التحكم</string>
+    <string name="recaptcha_line1">محمي بواسطة reCAPTCHA ويخضع لـ</string>
+    <string name="recaptcha_line2">سياسة الخصوصية وشروط الخدمة.</string>
+
+    <!-- Sign Up Screen -->
+    <string name="create_account_title">إنشاء حساب</string>
+    <string name="join_team_merchpulse">انضم إلى فريقك على ميرش بالس</string>
+    <string name="full_name_label_upper">الاسم الكامل</string>
+    <string name="phone_number_label_upper">رقم الهاتف</string>
+    <string name="workplace_role_label_upper">دور العمل</string>
+    <string name="enable_faceid">تفعيل FaceID</string>
+    <string name="biometric_subtitle">تأمين حسابك مع تسجيل الدخول بالمقاييس الحيوية</string>
+    <string name="join_team">انضم إلى الفريق</string>
+    <string name="sign_up_subtitle">أنشئ حساب الموظف الخاص بك لإدارة\nالمخزون وتتبع الوقت والوصول إلى أدوات المبيعات.</string>
+    <string name="full_legal_name">الاسم القانوني الكامل</string>
+    <string name="name_placeholder">مثال: أحمد محمد</string>
+    <string name="mobile_number">رقم الجوال</string>
+    <string name="create_password">إنشاء كلمة مرور</string>
+    <string name="password_hint">يجب أن تتكون من 8 أحرف على الأقل مع رمز خاص واحد.</string>
+    <string name="desired_role">الدور المطلوب</string>
+    <string name="requires_approval">يتطلب موافقة</string>
+    <string name="sales_associate">موظف مبيعات</string>
+    <string name="sales_associate_desc">الوصول إلى نقطة البيع، عرض المخزون الأساسي</string>
+    <string name="inventory_manager">مدير المخزون</string>
+    <string name="inventory_manager_desc">تحكم كامل في المخزون، أدوات التدقيق</string>
+    <string name="agree_terms_prefix">أوافق على </string>
+    <string name="terms_conditions">الشروط والأحكام</string>
+    <string name="agree_terms_and"> و </string>
+    <string name="privacy_policy">سياسة الخصوصية</string>
+    <string name="request_account">طلب حساب</string>
+    <string name="dont_have_account_prefix">ليس لديك حساب؟ </string>
+    <string name="already_have_account_prefix">لديك حساب بالفعل؟ </string>
+    <string name="log_in_label">تسجيل الدخول</string>
+    <string name="already_have_account">لديك حساب بالفعل؟ سجل دخولك</string>
+
+    <!-- Home Screen -->
+    <string name="hello_admin">مرحباً، المدير 👋</string>
+    <string name="critical">حرج</string>
+    <string name="new_label">جديد</string>
+    <string name="low_stock_items">أصناف منخفضة المخزون</string>
+    <string name="arrivals_today">وصول اليوم</string>
+    <string name="punches_today">تسجيلات اليوم</string>
+    <string name="active_employees">الموظفين النشطين</string>
+    <string name="daily_punch_summary">ملخص التسجيل اليومي</string>
+    <string name="in_shift">في المناوبة</string>
+    <string name="clocked_out">سجل الخروج</string>
+    <string name="not_started">لم يبدأ بعد</string>
+    <string name="inventory_manager_role">مدير المخزون</string>
+    <string name="sales_associate_role">موظف مبيعات</string>
+    <string name="technician">فني</string>
+    <string name="logistics">خدمات لوجستية</string>
+
+    <!-- Punch Screen -->
+    <string name="punch_out">تسجيل الخروج</string>
+    <string name="punch_in">تسجيل الدخول</string>
+    <string name="shift_active">المناوبة نشطة</string>
+    <string name="shift_duration">مدة المناوبة</string>
+    <string name="est_earnings">الأرباح المقدرة</string>
+    <string name="todays_activity">نشاط اليوم</string>
+    <string name="view_full_log">عرض السجل الكامل</string>
+    <string name="no_activity_recorded">لم يتم تسجيل أي نشاط بعد</string>
+    <string name="shift_started">بدأت المناوبة</string>
+    <string name="shift_ended">انتهت المناوبة</string>
+    <string name="regular_pay_warehouse">الأجر العادي • المستودع أ</string>
+
+    <!-- Product List Screen -->
+    <string name="inventory">المخزون</string>
+    <string name="search_placeholder">البحث بالاسم أو رمز المنتج…</string>
+    <string name="all">الكل</string>
+    <string name="active">نشط</string>
+    <string name="upcoming">قادم</string>
+    <string name="low_stock">مخزون منخفض</string>
+    <string name="items_count">%1$d أصناف</string>
+    <string name="sort_by_newest">ترتيب حسب: الأحدث</string>
+    <string name="add_product">إضافة منتج</string>
+    <string name="in_stock">في المخزون</string>
+    <string name="left">متبقي</string>
+    <string name="units_label">%1$d وحدات</string>
+    <string name="stock_left_label">%1$d متبقي</string>
+    <string name="avail_date">متاح في 03/25</string>
+
+    <!-- Product Form Screen -->
+    <string name="edit_product">تعديل المنتج</string>
+    <string name="new_product">منتج جديد</string>
+    <string name="restricted_access">وصول مقيد</string>
+    <string name="restricted_access_desc">لديك صلاحيات تعديل المنتج. سجلات المخزون الحساسة للقراءة فقط.</string>
+    <string name="basic_information">المعلومات الأساسية</string>
+    <string name="product_name">اسم المنتج</string>
+    <string name="sku">رمز المنتج (SKU)</string>
+    <string name="price">السعر</string>
+    <string name="category">الفئة</string>
+    <string name="select_category">اختر الفئة</string>
+    <string name="product_status">حالة المنتج</string>
+    <string name="stock_management">إدارة المخزون</string>
+    <string name="current_stock">المخزون الحالي</string>
+    <string name="units_available">الوحدات المتاحة</string>
+    <string name="low_stock_threshold">حد انخفاض المخزون</string>
+    <string name="threshold_helper">يتم إرسال تنبيه عندما ينخفض المخزون عن هذه القيمة.</string>
+    <string name="audit_log_reason">سبب سجل التدقيق</string>
+    <string name="add_note_placeholder">أضف ملاحظة لهذا التعديل (مطلوب)</string>
+    <string name="audit_note_disclaimer">* سيتم تسجيل هذه الملاحظة في سجل تدقيق المخزون المرئي للمديرين.</string>
+    <string name="save_changes">حفظ التغييرات</string>
+    <string name="create_product">إنشاء منتج</string>
+
+    <!-- Low Stock Screen -->
+    <string name="low_stock_alerts">تنبيهات انخفاض المخزون</string>
+    <string name="all_alerts">جميع التنبيهات</string>
+    <string name="critical_inventory">المخزون الحرج</string>
+    <string name="below_safety_threshold">أقل من حد الأمان</string>
+    <string name="export_list">تصدير القائمة</string>
+    <string name="order_all">طلب الكل</string>
+    <string name="critical_label">حرج</string>
+    <string name="threshold_label">الحد: %1$d</string>
+    <string name="last_sold_ago">آخر بيع منذ ساعتين</string>
+    <string name="restock">إعادة ملء</string>
+    <string name="categories">الفئات</string>
+
+    <!-- Employee List Screen -->
+    <string name="team_management">إدارة الفريق</string>
+    <string name="change_role">تغيير الدور:</string>
+
+    <!-- Team Punch Screen -->
+    <string name="team_attendance">حضور الفريق</string>
+    <string name="in_time">دخول: %1$s</string>
+    <string name="out_time">خروج: %1$s</string>
+</resources>

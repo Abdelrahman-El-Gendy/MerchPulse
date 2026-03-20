@@ -27,6 +27,17 @@ class ProductFormViewModel(
     private val _state = MutableStateFlow(ProductFormState())
     val state = _state.asStateFlow()
 
+    init {
+        loadPermissions()
+    }
+
+    private fun loadPermissions() {
+        viewModelScope.launch(dispatcherProvider.io) {
+            val permissions = authPolicy.getCurrentPermissions()
+            _state.update { it.copy(permissions = permissions) }
+        }
+    }
+
     private val _effect = Channel<ProductFormEffect>()
     val effect = _effect.receiveAsFlow()
 
@@ -83,6 +94,16 @@ class ProductFormViewModel(
                 authPolicy.requirePermission(perm)
 
                 val s = _state.value
+                if (s.name.isBlank() || s.sku.isBlank()) {
+                    _effect.send(ProductFormEffect.ShowError("Name and SKU are required"))
+                    return@launch
+                }
+                
+                if (s.isEditing && s.adjustmentNote.isBlank()) {
+                    _effect.send(ProductFormEffect.ShowError("Adjustment note is required for updates"))
+                    return@launch
+                }
+
                 val p = Product(
                     id = s.product?.id ?: UUID.randomUUID().toString(),
                     sku = s.sku,

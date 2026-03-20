@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -129,11 +130,23 @@ fun ProductFormScreen(
                         ) {
                             Text(stringResource(R.string.cancel), fontWeight = FontWeight.Bold)
                         }
+                        val canSave = if (state.isEditing) {
+                            state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_EDIT) && state.adjustmentNote.isNotBlank()
+                        } else {
+                            state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_CREATE)
+                        } && state.name.isNotBlank() && state.sku.isNotBlank()
+
                         Button(
                             onClick = { viewModel.handleIntent(ProductFormIntent.Save) },
                             modifier = Modifier.weight(1.5f).height(56.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = accentBlue, contentColor = MaterialTheme.colorScheme.onPrimary)
+                            enabled = canSave,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = accentBlue, 
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                disabledContainerColor = accentBlue.copy(alpha = 0.3f),
+                                disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
+                            )
                         ) {
                             Icon(Icons.Default.Save, null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
@@ -150,33 +163,46 @@ fun ProductFormScreen(
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = accentBlue
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .widthIn(max = if (isExpanded) 600.dp else if (isMedium) 500.dp else 1200.dp)
                     .padding(horizontal = 24.dp)
+                    .alpha(if (state.isLoading) 0.5f else 1f)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Spacer(Modifier.height(24.dp))
 
                 // Permission Banner
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = warningBg,
-                    shape = RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, warningText.copy(alpha = 0.3f))
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Lock, null, tint = warningText, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(16.dp))
-                        Column {
-                            Text(stringResource(R.string.restricted_access), color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                stringResource(R.string.restricted_access_desc),
-                                color = warningText,
-                                style = MaterialTheme.typography.labelSmall
-                            )
+                val hasCreatePerm = state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_CREATE)
+                val hasEditPerm = state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_EDIT)
+                val isRestricted = if (state.isEditing) !hasEditPerm else !hasCreatePerm
+
+                if (isRestricted) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = warningBg,
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, warningText.copy(alpha = 0.3f))
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Lock, null, tint = warningText, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text(stringResource(R.string.restricted_access), color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    if (state.isEditing) stringResource(R.string.restricted_access_desc) else stringResource(R.string.create_restricted_desc),
+                                    color = warningText,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
                         }
                     }
                 }
@@ -194,6 +220,15 @@ fun ProductFormScreen(
                             onValueChange = { viewModel.handleIntent(ProductFormIntent.NameChanged(it)) },
                             label = stringResource(R.string.product_name),
                             greyText = greyText
+                        )
+
+                        FormTextField(
+                            value = state.description,
+                            onValueChange = { viewModel.handleIntent(ProductFormIntent.DescriptionChanged(it)) },
+                            label = stringResource(R.string.description),
+                            greyText = greyText,
+                            singleLine = false,
+                            minLines = 3
                         )
                         
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -213,6 +248,17 @@ fun ProductFormScreen(
                                 keyboardType = KeyboardType.Decimal,
                                 greyText = greyText
                             )
+                            if (state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_EDIT)) {
+                                FormTextField(
+                                    value = state.cost,
+                                    onValueChange = { viewModel.handleIntent(ProductFormIntent.CostChanged(it)) },
+                                    label = stringResource(R.string.cost),
+                                    prefix = "$ ",
+                                    modifier = Modifier.weight(1f),
+                                    keyboardType = KeyboardType.Decimal,
+                                    greyText = greyText
+                                )
+                            }
                         }
 
                         // Category Dropdown (Simplified)
@@ -463,7 +509,9 @@ fun FormTextField(
     prefix: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     greyText: Color,
-    helperText: String? = null
+    helperText: String? = null,
+    singleLine: Boolean = true,
+    minLines: Int = 1
 ) {
     Column(modifier = modifier) {
         // Label using the "floating" style from design
@@ -491,7 +539,8 @@ fun FormTextField(
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                    singleLine = true
+                    singleLine = singleLine,
+                    minLines = minLines
                 )
             }
         }

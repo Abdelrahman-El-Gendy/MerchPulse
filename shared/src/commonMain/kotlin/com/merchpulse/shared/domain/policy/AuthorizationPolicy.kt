@@ -12,6 +12,14 @@ class AuthorizationPolicy(
         return employee?.permissions?.contains(permission) ?: false
     }
 
+    suspend fun getCurrentPermissions(): Set<Permission> {
+        return sessionManager.currentEmployee.first()?.permissions ?: emptySet()
+    }
+
+    suspend fun getCurrentRole(): com.merchpulse.shared.domain.model.Role? {
+        return sessionManager.currentEmployee.first()?.role
+    }
+
     suspend fun requirePermission(permission: Permission) {
         if (!checkPermission(permission)) {
             throw UnauthorizedException("Missing permission: ${permission.name}")

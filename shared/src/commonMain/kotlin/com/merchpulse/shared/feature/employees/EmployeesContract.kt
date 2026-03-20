@@ -10,7 +10,8 @@ import com.merchpulse.shared.mvi.UiState
 data class EmployeesState(
     val employees: List<Employee> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val permissions: Set<Permission> = emptySet()
 ) : UiState
 
 sealed class EmployeesIntent : UiIntent {

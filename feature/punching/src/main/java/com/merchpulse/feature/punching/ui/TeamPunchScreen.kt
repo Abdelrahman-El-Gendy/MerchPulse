@@ -53,14 +53,11 @@ fun TeamPunchScreen(
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val isToday = state.selectedDate == today
     
-    // Formatting date for display: "TODAY, OCT 30"
-    // Note: KMP doesn't have java.time.format.DateTimeFormatter directly in commonMain, 
-    // but since this file is in androidMain (implied by package structure and Context usage previously), we use Java time or simple string manipulation.
-    // For simplicity and robustness in KMP context, let's use a simple helper or just basic string construction if possible.
-    // Assuming Android target for now based on imports.
-    val month = state.selectedDate?.month?.name?.take(3)?.lowercase()?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: ""
-    val day = state.selectedDate?.dayOfMonth ?: ""
-    val dateHeader = if (isToday) stringResource(R.string.today_date_format, "$month $day").uppercase() else stringResource(R.string.yesterday_date_format, "$month $day").uppercase()
+    val dateHeader = state.selectedDate?.let { date ->
+        val monthStr = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+        val dayStr = date.dayOfMonth.toString()
+        if (isToday) "TODAY, $monthStr $dayStr" else "$monthStr $dayStr, ${date.year}"
+    } ?: "LOADING..."
 
 
     Scaffold(
@@ -144,13 +141,13 @@ fun TeamPunchScreen(
                         Icon(
                             Icons.Default.DateRange, 
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            // Placeholder date range logic
-                            "Oct 24 - Oct 30", 
+                            text = state.selectedDate?.let { "${it.month.name.take(3)} ${it.dayOfMonth}, ${it.year}" } ?: "Select Date", 
                             style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -181,10 +178,18 @@ fun TeamPunchScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
+            } else if (state.summaries.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.FilterList, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+                        Spacer(Modifier.height(16.dp))
+                        Text("No punch data for this date", color = MaterialTheme.colorScheme.outline)
+                    }
+                }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(state.summaries) { summary ->
                         TeamMemberCard(summary = summary)
@@ -197,36 +202,44 @@ fun TeamPunchScreen(
 
 @Composable
 fun TeamMemberCard(summary: DailySummary) {
+    val roleColor = when(summary.role) {
+        Role.ADMIN -> Color(0xFF6366F1) // Indigo
+        Role.MANAGER -> Color(0xFFEC4899) // Pink
+        Role.STAFF -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.primary
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f) 
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Avatar, Name, Role, Active Status, Menu
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Avatar Placeholder
+                // Avatar with Role Color
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.size(48.dp)
+                    color = roleColor.copy(alpha = 0.1f),
+                    modifier = Modifier.size(52.dp),
+                    border = BorderStroke(1.dp, roleColor.copy(alpha = 0.2f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        // Could use first letter of name or an icon
                         Text(
-                            text = summary.employeeName.firstOrNull()?.toString() ?: "",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            text = summary.employeeName.firstOrNull()?.toString()?.uppercase() ?: "",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = roleColor
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -236,23 +249,30 @@ fun TeamMemberCard(summary: DailySummary) {
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (summary.isActive) {
+                        if (summary.isCurrentlyIn) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
-                                color = Color(0xFF4CAF50).copy(alpha = 0.2f), // Green tint
-                                shape = RoundedCornerShape(4.dp)
+                                color = Color(0xFF10B981).copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(6.dp)
                             ) {
-                                Text(
-                                    text = stringResource(R.string.active_label),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = Color(0xFF4CAF50)
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Box(Modifier.size(6.dp).background(Color(0xFF10B981), CircleShape))
+                                    Text(
+                                        text = "ON SHIFT",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                        color = Color(0xFF10B981),
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
                             }
                         }
                     }
                     Text(
-                        text = summary.role?.name?.replace("_", " ")?.lowercase()?.capitalize(Locale.getDefault()) ?: "Staff", // Basic formatting
+                        text = summary.role?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Employee",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -261,8 +281,8 @@ fun TeamMemberCard(summary: DailySummary) {
                 IconButton(onClick = { /* Menu */ }) {
                     Icon(
                         Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.options),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        contentDescription = "Options",
+                        tint = MaterialTheme.colorScheme.outline
                     )
                 }
             }
@@ -273,24 +293,25 @@ fun TeamMemberCard(summary: DailySummary) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // First In Card
                 TimeStatusCard(
-                    label = stringResource(R.string.first_in_label),
-                    time = summary.firstIn?.toLocalDateTime(TimeZone.currentSystemDefault())?.let { 
-                        // Format: 08:42 AM
-                        val hour = if (it.hour > 12) it.hour - 12 else if (it.hour == 0) 12 else it.hour
-                        val amPm = if (it.hour >= 12) "PM" else "AM"
-                        "${hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')} $amPm"
+                    label = "FIRST IN",
+                    time = summary.firstIn?.let { instant ->
+                        val localTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+                        val hour = if (localTime.hour == 0) 12 else if (localTime.hour > 12) localTime.hour - 12 else localTime.hour
+                        val amPm = if (localTime.hour >= 12) "PM" else "AM"
+                        "${hour.toString().padStart(2, '0')}:${localTime.minute.toString().padStart(2, '0')} $amPm"
                     } ?: "--:--",
                     modifier = Modifier.weight(1f)
                 )
 
                 // Last Out Card
                 TimeStatusCard(
-                    label = stringResource(R.string.last_out_label),
-                    time = summary.lastOut?.toLocalDateTime(TimeZone.currentSystemDefault())?.let {
-                         val hour = if (it.hour > 12) it.hour - 12 else if (it.hour == 0) 12 else it.hour
-                        val amPm = if (it.hour >= 12) "PM" else "AM"
-                        "${hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')} $amPm"
-                    } ?: stringResource(R.string.still_on_shift), 
+                    label = "LAST OUT",
+                    time = summary.lastOut?.let { instant ->
+                        val localTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+                        val hour = if (localTime.hour == 0) 12 else if (localTime.hour > 12) localTime.hour - 12 else localTime.hour
+                        val amPm = if (localTime.hour >= 12) "PM" else "AM"
+                        "${hour.toString().padStart(2, '0')}:${localTime.minute.toString().padStart(2, '0')} $amPm"
+                    } ?: "Still Active", 
                     isItalic = summary.lastOut == null,
                     modifier = Modifier.weight(1f)
                 )

@@ -25,9 +25,10 @@ import com.merchpulse.core.designsystem.theme.LocalWindowSizeClass
 
 data class EmployeePunchMock(
     val name: String,
-    val role: String,
+    val roleResId: Int,
     val time: String,
-    val status: String,
+    val statusResId: Int,
+    val statusArg: String? = null,
     val isIn: Boolean
 )
 
@@ -39,7 +40,8 @@ fun HomeScreen(
     onNavigateToLowStock: () -> Unit,
     onNavigateToPunch: () -> Unit,
     onNavigateToEmployees: () -> Unit,
-    onNavigateToTeamPunches: () -> Unit
+    onNavigateToTeamPunches: () -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val windowSizeClass = LocalWindowSizeClass.current
@@ -91,46 +93,65 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Thursday, Feb 12",
+                        state.currentDate,
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        stringResource(R.string.hello_admin),
+                        stringResource(
+                            if (state.userRole == com.merchpulse.shared.domain.model.Role.ADMIN) R.string.hello_admin 
+                            else R.string.hello_user, 
+                            state.employeeName
+                        ),
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.wrapContentWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
+                ) {
                     if (isExpanded) {
-                        Button(
-                            onClick = { /* Add Product */ },
-                            modifier = Modifier.padding(end = 16.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Add, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.add_product))
+                        if (state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_CREATE)) {
+                            Button(
+                                onClick = { /* Add Product */ },
+                                modifier = Modifier.padding(end = 16.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Add, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.add_product))
+                            }
                         }
                     }
-                    Box {
+                    Box(modifier = Modifier.size(48.dp)) {
                         IconButton(
-                            onClick = { /* Notifications */ },
+                            onClick = onNavigateToNotifications,
                             modifier = Modifier
                                 .background(cardBg, CircleShape)
-                                .size(48.dp)
+                                .fillMaxSize()
                         ) {
-                            Icon(Icons.Default.Notifications, stringResource(R.string.notifications), tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = stringResource(R.string.notifications),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
+                        // Notification Badge
                         Box(
                             modifier = Modifier
                                 .size(10.dp)
                                 .background(statusRed, CircleShape)
+                                .border(2.dp, cardBg, CircleShape)
                                 .align(Alignment.TopEnd)
-                                .offset(x = (-4).dp, y = 4.dp)
+                                .offset(x = (-2).dp, y = 2.dp)
                         )
                     }
                 }
@@ -172,32 +193,36 @@ fun HomeScreen(
                             )
                         }
                         
-                        Spacer(Modifier.height(24.dp))
-                        
-                        ActiveEmployeesCard(
-                            active = state.activeEmployeesCount,
-                            total = state.totalEmployeesCount,
-                            onClick = onNavigateToTeamPunches
-                        )
+                        if (state.permissions.contains(com.merchpulse.shared.domain.model.Permission.EMPLOYEE_VIEW)) {
+                            Spacer(Modifier.height(24.dp))
+                            
+                            ActiveEmployeesCard(
+                                active = state.activeEmployeesCount,
+                                total = state.totalEmployeesCount,
+                                onClick = onNavigateToTeamPunches
+                            )
+                        }
                     }
 
                     // Right Column: Recent Activity / Punches
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            stringResource(R.string.daily_punch_summary),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        
-                        val mockEmployees = getMockEmployees()
-                        mockEmployees.forEach { emp ->
-                            EmployeePunchRow(emp, cardBg, statusGreen, statusRed)
-                            Spacer(Modifier.height(12.dp))
-                        }
-                        TextButton(onClick = onNavigateToTeamPunches, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.view_all), color = accentBlue)
+                        if (state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PUNCH_VIEW_ALL)) {
+                            Text(
+                                stringResource(R.string.daily_punch_summary),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            
+                            val mockEmployees = getMockEmployees()
+                            mockEmployees.forEach { emp ->
+                                EmployeePunchRow(emp, cardBg, statusGreen, statusRed)
+                                Spacer(Modifier.height(12.dp))
+                            }
+                            TextButton(onClick = onNavigateToTeamPunches, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.view_all), color = accentBlue)
+                            }
                         }
                     }
                 }
@@ -235,37 +260,41 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
+                if (state.permissions.contains(com.merchpulse.shared.domain.model.Permission.EMPLOYEE_VIEW)) {
+                    Spacer(Modifier.height(24.dp))
 
-                ActiveEmployeesCard(
-                    active = state.activeEmployeesCount,
-                    total = state.totalEmployeesCount,
-                    onClick = onNavigateToTeamPunches
-                )
-
-                Spacer(Modifier.height(32.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        stringResource(R.string.daily_punch_summary),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold
+                    ActiveEmployeesCard(
+                        active = state.activeEmployeesCount,
+                        total = state.totalEmployeesCount,
+                        onClick = onNavigateToTeamPunches
                     )
-                    TextButton(onClick = onNavigateToTeamPunches) {
-                        Text(stringResource(R.string.view_all), color = accentBlue)
-                    }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                if (state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PUNCH_VIEW_ALL)) {
+                    Spacer(Modifier.height(32.dp))
 
-                getMockEmployees().forEach { emp ->
-                    EmployeePunchRow(emp, cardBg, statusGreen, statusRed)
-                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            stringResource(R.string.daily_punch_summary),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold
+                        )
+                        TextButton(onClick = onNavigateToTeamPunches) {
+                            Text(stringResource(R.string.view_all), color = accentBlue)
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    getMockEmployees().forEach { emp ->
+                        EmployeePunchRow(emp, cardBg, statusGreen, statusRed)
+                        Spacer(Modifier.height(12.dp))
+                    }
                 }
             }
             
@@ -405,7 +434,7 @@ fun EmployeePunchRow(emp: EmployeePunchMock, cardBg: Color, statusGreen: Color, 
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(emp.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                Text(emp.role, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(emp.roleResId), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
             
             Column(horizontalAlignment = Alignment.End) {
@@ -419,15 +448,19 @@ fun EmployeePunchRow(emp: EmployeePunchMock, cardBg: Color, statusGreen: Color, 
                     Spacer(Modifier.width(4.dp))
                     Text(emp.time, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleSmall)
                 }
-                Text(emp.status, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    if (emp.statusArg != null) stringResource(emp.statusResId, emp.statusArg) else stringResource(emp.statusResId),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
 }
 
 private fun getMockEmployees() = listOf(
-    EmployeePunchMock("Alex Johnson", "Inventory Manager", "08:30 AM", "Active • In Warehouse", true),
-    EmployeePunchMock("Maria Garcia", "Sales Associate", "09:15 AM", "Active • Main Floor", true),
-    EmployeePunchMock("Ryan Smith", "Logistics", "07:45 AM", "Clocked Out • 5:00 PM", false),
-    EmployeePunchMock("Sarah Wilson", "Technician", "10:00 AM", "Active • Service Center", true)
+    EmployeePunchMock("Alex Johnson", R.string.inventory_manager_role, "08:30 AM", R.string.active_in_warehouse, null, true),
+    EmployeePunchMock("Maria Garcia", R.string.sales_associate_role, "09:15 AM", R.string.active_main_floor, null, true),
+    EmployeePunchMock("Ryan Smith", R.string.logistics, "07:45 AM", R.string.clocked_out_at, "5:00 PM", false),
+    EmployeePunchMock("Sarah Wilson", R.string.technician, "10:00 AM", R.string.active_service_center, null, true)
 )

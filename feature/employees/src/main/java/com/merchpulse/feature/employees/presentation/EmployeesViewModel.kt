@@ -42,6 +42,8 @@ class EmployeesViewModel(
         viewModelScope.launch(dispatcherProvider.io) {
             _state.update { it.copy(isLoading = true) }
             try {
+                val permissions = authPolicy.getCurrentPermissions()
+                _state.update { it.copy(permissions = permissions) }
                 authPolicy.requirePermission(Permission.EMPLOYEE_VIEW)
                 repository.getAllEmployees().collect { list ->
                     _state.update { it.copy(employees = list, isLoading = false) }

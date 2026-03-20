@@ -11,11 +11,11 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val authModule = module {
-    single<SessionManager> { SessionManagerImpl(get()) }
-    single<EmployeeRepository> { EmployeeRepositoryImpl(get(), get()) }
+    single<SessionManager> { SessionManagerImpl(get(), get()) }
+    single<EmployeeRepository> { EmployeeRepositoryImpl(get(), get(), get()) }
     single<com.merchpulse.shared.domain.repository.AuditRepository> { com.merchpulse.feature.auth.data.AuditRepositoryImpl(get(), get(), get()) }
     single { AuthorizationPolicy(get()) }
     
-    viewModel { SignInViewModel(get(), get(), get(), get()) }
+    viewModel { SignInViewModel(get(), get(), get(), get(), get()) }
     viewModel { SignUpViewModel(get(), get(), get()) }
 }

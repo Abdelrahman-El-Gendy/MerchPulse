@@ -51,7 +51,12 @@ class ProductViewModel(
     }
 
     private suspend fun loadProducts() {
-        withContext(dispatcherProvider.main) { _state.value = _state.value.copy(isLoading = true) }
+        withContext(dispatcherProvider.main) { 
+            _state.value = _state.value.copy(
+                isLoading = true,
+                permissions = authPolicy.getCurrentPermissions()
+            ) 
+        }
         try {
             repository.getAllProducts().collect { list ->
                 var filtered = list

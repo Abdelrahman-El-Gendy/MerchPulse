@@ -41,7 +41,8 @@ data class DailySummary(
     val lastOut: Instant?,
     val totalPunches: Int,
     val role: com.merchpulse.shared.domain.model.Role? = null,
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    val isCurrentlyIn: Boolean = false
 )
 
 data class TeamPunchState(

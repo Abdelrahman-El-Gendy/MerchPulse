@@ -3,12 +3,16 @@ package com.merchpulse.core.database
 import com.merchpulse.shared.domain.model.*
 import com.merchpulse.shared.domain.repository.EmployeeRepository
 import com.merchpulse.shared.domain.repository.ProductRepository
+import com.merchpulse.shared.domain.repository.PunchRepository
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.hours
 import java.util.UUID
 
 class DataSeeder(
     private val productRepository: ProductRepository,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val punchRepository: PunchRepository
 ) {
     suspend fun seed() {
         // Seed Admin
@@ -73,5 +77,38 @@ class DataSeeder(
             )
         )
         products.forEach { productRepository.createProduct(it) }
+
+        // Seed some Punches for Alex Rivera
+        val now = Clock.System.now()
+        val punches = listOf(
+            TimePunch(
+                id = UUID.randomUUID().toString(),
+                employeeId = "alex-1",
+                timestamp = now - 6.hours,
+                type = PunchType.IN,
+                deviceId = "mock-device",
+                note = "Starting shift",
+                createdBy = "alex-1"
+            ),
+            TimePunch(
+                id = UUID.randomUUID().toString(),
+                employeeId = "alex-1",
+                timestamp = now - 2.hours,
+                type = PunchType.OUT,
+                deviceId = "mock-device",
+                note = "Lunch break",
+                createdBy = "alex-1"
+            ),
+            TimePunch(
+                id = UUID.randomUUID().toString(),
+                employeeId = "alex-1",
+                timestamp = now - 1.hours,
+                type = PunchType.IN,
+                deviceId = "mock-device",
+                note = "Back from lunch",
+                createdBy = "alex-1"
+            )
+        )
+        punches.forEach { punchRepository.recordPunch(it) }
     }
 }

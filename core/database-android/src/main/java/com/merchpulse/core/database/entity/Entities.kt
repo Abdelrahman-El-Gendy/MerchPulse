@@ -6,11 +6,15 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "products",
-    indices = [Index(value = ["sku"], unique = true)]
+    indices = [
+        Index(value = ["sku"], unique = true),
+        Index(value = ["ownerUserId"])
+    ]
 )
 data class ProductEntity(
     @PrimaryKey
     val id: String,
+    val ownerUserId: String,  // Scope to logged-in user
     val sku: String,
     val name: String,
     val description: String?,
@@ -30,12 +34,14 @@ data class ProductEntity(
     tableName = "employees",
     indices = [
         Index(value = ["email"], unique = true),
-        Index(value = ["phoneNumber"], unique = true)
+        Index(value = ["phoneNumber"], unique = true),
+        Index(value = ["ownerUserId"])
     ]
 )
 data class EmployeeEntity(
     @PrimaryKey
     val id: String,
+    val ownerUserId: String,  // Scope to logged-in user
     val email: String,
     val phoneNumber: String,
     val fullName: String,
@@ -43,7 +49,7 @@ data class EmployeeEntity(
     val isActive: Boolean,
     val isOnShift: Boolean,
     val lastPunchTime: Long?,
-    val avatarUrl: String?,
+    val imageUrl: String?,
     val joinedAt: Long,
     val pinHash: String
 )
@@ -51,20 +57,26 @@ data class EmployeeEntity(
 
 @Entity(
     tableName = "employee_permissions",
-    primaryKeys = ["employeeId", "permission"]
+    primaryKeys = ["employeeId", "permission", "ownerUserId"],
+    indices = [Index(value = ["ownerUserId"])]
 )
 data class EmployeePermissionEntity(
     val employeeId: String,
-    val permission: String
+    val permission: String,
+    val ownerUserId: String
 )
 
 @Entity(
     tableName = "punches",
-    indices = [Index(value = ["employeeId", "timestamp"])]
+    indices = [
+        Index(value = ["employeeId", "timestamp"]),
+        Index(value = ["ownerUserId"])
+    ]
 )
 data class PunchEntity(
     @PrimaryKey
     val id: String,
+    val ownerUserId: String,
     val employeeId: String,
     val timestamp: Long,
     val type: String,
@@ -75,11 +87,15 @@ data class PunchEntity(
 
 @Entity(
     tableName = "audit_logs",
-    indices = [Index(value = ["entityId", "entityType"])]
+    indices = [
+        Index(value = ["entityId", "entityType"]),
+        Index(value = ["ownerUserId"])
+    ]
 )
 data class AuditEntity(
     @PrimaryKey
     val id: String,
+    val ownerUserId: String,
     val entityType: String,   // "PUNCH", "PRODUCT", "EMPLOYEE"
     val entityId: String,
     val action: String,       // "CREATE", "UPDATE", "DELETE", "CORRECTION"

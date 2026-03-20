@@ -13,35 +13,44 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.merchpulse.core.common.DispatcherProvider
 
+import com.merchpulse.shared.domain.repository.SessionManager
+import kotlinx.coroutines.flow.emptyFlow
+
 class EmployeeRepositoryImpl(
     private val employeeDao: EmployeeDao,
+    private val sessionManager: SessionManager,
     private val dispatcherProvider: DispatcherProvider
 ) : EmployeeRepository {
 
     override fun getEmployeeByEmail(email: String): Flow<Employee?> {
-        return employeeDao.getEmployeeByEmail(email).map { it?.toDomain() }
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return employeeDao.getEmployeeByEmail(userId, email).map { it?.toDomain() }
     }
 
     override fun getEmployeeByPhone(phone: String): Flow<Employee?> {
-        return employeeDao.getEmployeeByPhone(phone).map { it?.toDomain() }
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return employeeDao.getEmployeeByPhone(userId, phone).map { it?.toDomain() }
     }
     
     override fun getEmployeeById(id: String): Flow<Employee?> {
-        return employeeDao.getEmployeeById(id).map { it?.toDomain() }
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return employeeDao.getEmployeeById(userId, id).map { it?.toDomain() }
     }
 
     override fun getAllEmployees(): Flow<List<Employee>> {
-        return employeeDao.getAllEmployees().map { list ->
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return employeeDao.getAllEmployees(userId).map { list ->
             list.map { it.toDomain() }
         }
     }
 
     override suspend fun createEmployee(employee: Employee, pinHash: String): Result<Unit> = withContext(dispatcherProvider.io) {
+        val userId = sessionManager.currentUserId ?: return@withContext Result.failure(Exception("No user logged in"))
         try {
-            val entity = employee.toEntity(pinHash)
+            val entity = employee.toEntity(userId, pinHash)
             employeeDao.insertEmployee(entity)
             employeeDao.insertPermissions(employee.permissions.map { 
-                com.merchpulse.core.database.entity.EmployeePermissionEntity(employee.id, it.name) 
+                com.merchpulse.core.database.entity.EmployeePermissionEntity(employee.id, it.name, userId) 
             })
             Result.success(Unit)
         } catch (e: Exception) {
@@ -50,12 +59,13 @@ class EmployeeRepositoryImpl(
     }
 
     override suspend fun updateEmployee(employee: Employee): Result<Unit> = withContext(dispatcherProvider.io) {
+        val userId = sessionManager.currentUserId ?: return@withContext Result.failure(Exception("No user logged in"))
         try {
-            val existing = employeeDao.getEmployeeById(employee.id).first()
+            val existing = employeeDao.getEmployeeById(userId, employee.id).first()
             if (existing != null) {
                 // Keep existing pinHash from DB
-                val newEntity = employee.toEntity(existing.employee.pinHash)
-                employeeDao.updateEmployeeWithPermissions(newEntity, employee.permissions.map { it.name })
+                val newEntity = employee.toEntity(userId, existing.employee.pinHash)
+                employeeDao.updateEmployeeWithPermissions(userId, newEntity, employee.permissions.map { it.name })
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Employee not found"))
@@ -66,7 +76,8 @@ class EmployeeRepositoryImpl(
     }
     
     override suspend fun verifyPin(employeeId: String, pin: String): Boolean = withContext(dispatcherProvider.io) {
-         val employeeWithPerms = employeeDao.getEmployeeById(employeeId).first()
+         val userId = sessionManager.currentUserId ?: return@withContext false
+         val employeeWithPerms = employeeDao.getEmployeeById(userId, employeeId).first()
          // MVP: direct comparison, in production use BCrypt/Argon2
          employeeWithPerms?.employee?.pinHash == pin
     }
@@ -85,9 +96,10 @@ private fun EmployeeWithPermissions.toDomain(): Employee {
     )
 }
 
-private fun Employee.toEntity(pinHash: String): EmployeeEntity {
+private fun Employee.toEntity(ownerUserId: String, pinHash: String): EmployeeEntity {
     return EmployeeEntity(
         id = id,
+        ownerUserId = ownerUserId,
         email = email,
         phoneNumber = phoneNumber,
         fullName = fullName,
@@ -95,7 +107,7 @@ private fun Employee.toEntity(pinHash: String): EmployeeEntity {
         isActive = isActive,
         isOnShift = false,
         lastPunchTime = null,
-        avatarUrl = null,
+        imageUrl = null,
         joinedAt = joinedAt.toEpochMilliseconds(),
         pinHash = pinHash
     )

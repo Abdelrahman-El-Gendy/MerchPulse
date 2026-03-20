@@ -27,8 +27,10 @@ class AuditRepositoryImpl(
     ): Result<Unit> = withContext(dispatcherProvider.io) {
         try {
             val employee = sessionManager.currentEmployee.value
+            val userId = sessionManager.currentUserId ?: "SYSTEM"
             val audit = AuditEntity(
                 id = UUID.randomUUID().toString(),
+                ownerUserId = userId,
                 action = action,
                 entityType = entityType,
                 entityId = entityId,
@@ -46,7 +48,8 @@ class AuditRepositoryImpl(
     }
 
     override fun getRecentLogs(limit: Int): Flow<List<AuditLog>> {
-        return auditDao.getRecentAudits(limit).map { list ->
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return auditDao.getRecentAudits(userId, limit).map { list ->
             list.map { it.toDomain() }
         }
     }

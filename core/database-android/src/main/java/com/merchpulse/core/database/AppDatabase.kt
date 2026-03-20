@@ -22,7 +22,7 @@ import com.merchpulse.core.database.entity.PunchEntity
         PunchEntity::class,
         AuditEntity::class
     ],
-    version = 3,
+    version = 4, // Incremented for ownerUserId addition
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,10 +31,21 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun punchDao(): PunchDao
     abstract fun auditDao(): AuditDao
 
+    /**
+     * Wipes all cached data scoped to the given userId.
+     */
+    suspend fun clearAllTablesForCurrentUser(userId: String) {
+        productDao().clearCacheForUser(userId)
+        employeeDao().clearCacheForUser(userId)
+        employeeDao().clearPermissionsForUser(userId)
+        punchDao().clearCacheForUser(userId)
+        auditDao().clearCacheForUser(userId)
+    }
+
     companion object {
         fun build(context: Context): AppDatabase {
             return Room.databaseBuilder(context, AppDatabase::class.java, "merch_pulse.db")
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration() // Reset cache on schema change
                 .build()
         }
     }

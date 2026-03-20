@@ -8,7 +8,7 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val punchingModule = module {
-    single<PunchRepository> { PunchRepositoryImpl(get(), get()) }
+    single<PunchRepository> { PunchRepositoryImpl(get(), get(), get()) }
     
     viewModel { PunchViewModel(get(), get(), get()) }
     viewModel { TeamPunchViewModel(get(), get(), get(), get(), get()) }

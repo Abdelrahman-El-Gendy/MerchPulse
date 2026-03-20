@@ -10,9 +10,14 @@ import com.merchpulse.shared.feature.home.HomeEffect
 import com.merchpulse.shared.feature.home.HomeIntent
 import com.merchpulse.shared.feature.home.HomeState
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.Date
 
 class HomeViewModel(
     private val productRepository: ProductRepository,
@@ -29,6 +34,23 @@ class HomeViewModel(
 
     init {
         handleIntent(HomeIntent.LoadDashboard)
+        startClock()
+    }
+
+    private fun startClock() {
+        viewModelScope.launch(dispatcherProvider.main) {
+            fun update() {
+                val sdf = SimpleDateFormat("EEEE, MMM dd • hh:mm a", Locale.getDefault())
+                val formatted = sdf.format(Date())
+                _state.update { it.copy(currentDate = formatted) }
+            }
+            
+            update() // Initial update
+            while (true) {
+                delay(1000) 
+                update()
+            }
+        }
     }
 
     fun handleIntent(intent: HomeIntent) {
@@ -59,6 +81,8 @@ class HomeViewModel(
                 _state.update { 
                     it.copy(
                         employeeName = employee.fullName,
+                        userRole = employee.role,
+                        permissions = employee.permissions,
                         lowStockCount = lowStock,
                         upcomingProductsCount = upcoming,
                         todayPunchesCount = todayPunches,

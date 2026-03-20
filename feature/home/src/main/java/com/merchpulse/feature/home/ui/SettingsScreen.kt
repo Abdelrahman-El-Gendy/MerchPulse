@@ -34,7 +34,8 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel(),
     onNavigateBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     val context = LocalContext.current
     val themeMode by viewModel.theme.collectAsState()
@@ -91,7 +92,7 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Default.Notifications,
                     title = stringResource(R.string.notification_preferences),
-                    onClick = { /* TODO */ }
+                    onClick = onNavigateToNotifications
                 )
             }
 
@@ -100,7 +101,7 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Default.Language,
                     title = stringResource(R.string.language),
-                    subtitle = if (language == "ar") "العربية" else "English (US)",
+                    subtitle = if (language == "ar") stringResource(R.string.arabic_label) else stringResource(R.string.english_us),
                     showArrow = true,
                     onClick = { showLanguageDialog = true }
                 )
@@ -108,7 +109,7 @@ fun SettingsScreen(
                 SettingsToggleItem(
                     icon = Icons.Default.NightsStay,
                     title = stringResource(R.string.dark_mode),
-                    description = if (themeMode == "dark") "Using dark theme" else "Using light theme",
+                    description = if (themeMode == "dark") stringResource(R.string.using_dark_theme) else stringResource(R.string.using_light_theme),
                     checked = themeMode == "dark",
                     onCheckedChange = { isDark ->
                         viewModel.setTheme(if (isDark) "dark" else "light")
@@ -141,7 +142,7 @@ fun SettingsScreen(
                 SettingsToggleItem(
                     icon = Icons.Default.Face,
                     title = stringResource(R.string.biometric_login),
-                    description = "Secure login using your face or fingerprint",
+                    description = stringResource(R.string.biometric_desc),
                     checked = biometricEnabled,
                     onCheckedChange = { enabled ->
                         if (enabled) {

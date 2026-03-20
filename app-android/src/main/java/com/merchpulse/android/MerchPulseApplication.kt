@@ -10,6 +10,7 @@ import com.merchpulse.feature.home.di.homeModule
 import com.merchpulse.feature.products.di.productsModule
 import com.merchpulse.feature.punching.di.punchingModule
 import com.merchpulse.feature.stock.di.stockModule
+import com.merchpulse.core.supabase.di.supabaseModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +34,7 @@ class MerchPulseApplication : Application() {
                 commonModule,
                 com.merchpulse.core.common.di.platformModule,
                 databaseModule,
+                supabaseModule,
                 authModule,
                 homeModule,
                 productsModule,

@@ -17,8 +17,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
+import com.merchpulse.shared.domain.repository.AuthRepository
+
 class SignInViewModel(
     private val employeeRepository: EmployeeRepository,
+    private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
     private val dispatcherProvider: DispatcherProvider,
     private val preferencesManager: PreferencesManager
@@ -75,27 +78,27 @@ class SignInViewModel(
             }
 
             try {
-                // In a real app, combine country code with phone
-                val fullPhone = "$countryCode$phone"
+                // STEP 1: Supabase Sign In
+                val result = authRepository.signIn(phone, pin)
                 
-                // For now, search by the number provided in the database
-                // (Assuming the seeder or creation logic stores it consistently)
-                val employee = employeeRepository.getEmployeeByPhone(phone).first() 
-                    ?: employeeRepository.getEmployeeByPhone(fullPhone).first()
-
-                if (employee != null) {
-                    val verified = employeeRepository.verifyPin(employee.id, pin)
-                    if (verified) {
-                        preferencesManager.setString("last_employee_id", employee.id)
-                        sessionManager.startSession(employee)
-                        _state.value = _state.value.copy(isLoading = false)
-                        _effect.send(SignInEffect.NavigateToHome)
-                    } else {
-                        _state.value = _state.value.copy(isLoading = false, error = "Invalid Password")
+                result.fold(
+                    onSuccess = { authSession ->
+                        // STEP 2: Fetch Employee details
+                        val employee = employeeRepository.getEmployeeById(authSession.userId).first()
+                        
+                        if (employee != null) {
+                            preferencesManager.setString("last_employee_id", employee.id)
+                            sessionManager.startSession(employee)
+                            _state.value = _state.value.copy(isLoading = false)
+                            _effect.send(SignInEffect.NavigateToHome)
+                        } else {
+                            _state.value = _state.value.copy(isLoading = false, error = "Employee profile not found")
+                        }
+                    },
+                    onFailure = { e ->
+                        _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Invalid credentials")
                     }
-                } else {
-                    _state.value = _state.value.copy(isLoading = false, error = "User not found")
-                }
+                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false, 

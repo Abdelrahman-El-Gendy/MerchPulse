@@ -225,7 +225,8 @@ fun ProductListScreen(
     viewModel: ProductViewModel = koinViewModel(),
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAdd: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val windowSizeClass = LocalWindowSizeClass.current
@@ -245,7 +246,7 @@ fun ProductListScreen(
         containerColor = darkBg,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            if (!isExpanded) {
+            if (!isExpanded && state.permissions.contains(com.merchpulse.shared.domain.model.Permission.PRODUCT_CREATE)) {
                 FloatingActionButton(
                     onClick = onNavigateToAdd,
                     containerColor = accentBlue,
@@ -297,7 +298,7 @@ fun ProductListScreen(
                         }
                     }
                     IconButton(
-                        onClick = { /* Notifications */ },
+                        onClick = onNavigateToNotifications,
                         modifier = Modifier
                             .background(cardBg, CircleShape)
                             .size(40.dp)

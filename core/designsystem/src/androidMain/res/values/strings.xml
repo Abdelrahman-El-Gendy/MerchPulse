@@ -58,6 +58,7 @@
 
     <!-- Home Screen -->
     <string name="hello_admin">Hello, Admin 👋</string>
+    <string name="hello_user">Hello, %1$s 👋</string>
     <string name="critical">Critical</string>
     <string name="new_label">New</string>
     <string name="low_stock_items">Low Stock Items</string>
@@ -107,10 +108,13 @@
     <string name="new_product">New Product</string>
     <string name="restricted_access">Restricted Access</string>
     <string name="restricted_access_desc">You have PRODUCT_EDIT permissions. Sensitive stock logs are read-only.</string>
+    <string name="create_restricted_desc">You do not have permission to create products.</string>
     <string name="basic_information">BASIC INFORMATION</string>
     <string name="product_name">Product Name</string>
+    <string name="description">Description</string>
     <string name="sku">SKU</string>
     <string name="price">Price</string>
+    <string name="cost">Cost</string>
     <string name="category">Category</string>
     <string name="select_category">Select Category</string>
     <string name="product_status">Product Status</string>
@@ -152,8 +156,20 @@
     <string name="last_out_label">LAST OUT</string>
     <string name="still_on_shift">Still on shift</string>
     <string name="active_label">ACTIVE</string>
+    <string name="active_in_warehouse">Active • In Warehouse</string>
+    <string name="active_main_floor">Active • Main Floor</string>
+    <string name="clocked_out_at">Clocked Out • %1$s</string>
+    <string name="active_service_center">Active • Service Center</string>
     <string name="today_date_format">TODAY, %s</string>
     <string name="yesterday_date_format">YESTERDAY, %s</string>
+    <string name="mark_all_read">Mark all as read</string>
+    <string name="no_notifications">No notifications yet</string>
+    <string name="notification_info">Info</string>
+    <string name="notification_warning">Warning</string>
+    <string name="notification_success">Success</string>
+    <string name="stock_alert">Stock Alert</string>
+    <string name="attendance_alert">Attendance Alert</string>
+    <string name="system_update">System Update</string>
 
     <!-- Settings Screen -->
     <string name="app_settings">App Settings</string>
@@ -163,6 +179,10 @@
     <string name="app_preferences">APP PREFERENCES</string>
     <string name="language">Language</string>
     <string name="english_us">English (US)</string>
+    <string name="arabic_label">Arabic (العربية)</string>
+    <string name="using_dark_theme">Using dark theme</string>
+    <string name="using_light_theme">Using light theme</string>
+    <string name="biometric_desc">Secure login using your face or fingerprint</string>
     <string name="dark_mode">Dark Mode</string>
     <string name="inventory_settings">INVENTORY SETTINGS</string>
     <string name="low_stock_threshold_setting">Low Stock Threshold</string>

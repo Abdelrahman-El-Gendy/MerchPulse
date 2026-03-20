@@ -84,10 +84,23 @@ class SignUpViewModel(
                     phoneNumber = s.phoneNumber.trim(),
                     fullName = s.fullName.trim(),
                     role = s.selectedRole,
-                    permissions = if (s.selectedRole == Role.MANAGER) {
-                        Permission.entries.toSet()
-                    } else {
-                        setOf(Permission.PUNCH_SELF, Permission.PRODUCT_VIEW)
+                    permissions = when (s.selectedRole) {
+                        Role.ADMIN -> Permission.entries.toSet()
+                        Role.MANAGER -> setOf(
+                            Permission.PRODUCT_VIEW,
+                            Permission.PRODUCT_CREATE,
+                            Permission.PRODUCT_EDIT,
+                            Permission.STOCK_ADJUST,
+                            Permission.EMPLOYEE_VIEW,
+                            Permission.PUNCH_SELF,
+                            Permission.PUNCH_VIEW_ALL,
+                            Permission.PUNCH_ADJUST
+                        )
+                        Role.STAFF -> setOf(
+                            Permission.PUNCH_SELF,
+                            Permission.PRODUCT_VIEW,
+                            Permission.STOCK_ADJUST
+                        )
                     },
                     isActive = false, // Design says "Requires Approval"
                     joinedAt = Clock.System.now()

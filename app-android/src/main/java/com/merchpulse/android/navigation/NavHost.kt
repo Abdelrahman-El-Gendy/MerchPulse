@@ -17,6 +17,7 @@ import com.merchpulse.feature.auth.ui.SignInScreen
 import com.merchpulse.feature.auth.ui.SignUpScreen
 import com.merchpulse.feature.home.ui.HomeScreen
 import com.merchpulse.feature.home.ui.SettingsScreen
+import com.merchpulse.feature.home.ui.NotificationScreen
 import com.merchpulse.feature.products.ui.ProductListScreen
 import com.merchpulse.feature.products.ui.ProductFormScreen
 import com.merchpulse.feature.stock.ui.LowStockScreen
@@ -89,8 +90,13 @@ fun MerchPulseNavHost(
                 onNavigateToLowStock = { navController.navigate(Screen.LowStock.route) },
                 onNavigateToPunch = { navController.navigate(Screen.Punch.route) },
                 onNavigateToEmployees = { navController.navigate(Screen.Employees.route) },
-                onNavigateToTeamPunches = { navController.navigate(Screen.TeamPunches.route) }
+                onNavigateToTeamPunches = { navController.navigate(Screen.TeamPunches.route) },
+                onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) }
             )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         composable(Screen.Inventory.route) {
@@ -101,7 +107,8 @@ fun MerchPulseNavHost(
                 onNavigateToAdd = {
                     navController.navigate(Screen.ProductForm.createRoute("null"))
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) }
             )
         }
 
@@ -143,7 +150,8 @@ fun MerchPulseNavHost(
                     navController.navigate(Screen.SignIn.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) }
             )
         }
     }

@@ -13,7 +13,10 @@ data class HomeState(
     val arrivalsCount: Int = 0,
     val activeEmployeesCount: Int = 0,
     val totalEmployeesCount: Int = 0,
+    val currentDate: String = "",
     val todayPunches: List<TimePunch> = emptyList(),
+    val userRole: com.merchpulse.shared.domain.model.Role = com.merchpulse.shared.domain.model.Role.STAFF,
+    val permissions: Set<com.merchpulse.shared.domain.model.Permission> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null
 ) : UiState

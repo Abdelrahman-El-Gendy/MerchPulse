@@ -11,28 +11,36 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
+import com.merchpulse.shared.domain.repository.SessionManager
+import kotlinx.coroutines.flow.emptyFlow
+
 class PunchRepositoryImpl(
     private val punchDao: PunchDao,
+    private val sessionManager: SessionManager,
     private val dispatcherProvider: DispatcherProvider
 ) : PunchRepository {
 
     override fun getPunchesForEmployee(employeeId: String, from: Instant, to: Instant): Flow<List<TimePunch>> {
-        return punchDao.getPunchesForEmployee(employeeId, from.toEpochMilliseconds(), to.toEpochMilliseconds())
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return punchDao.getPunchesForEmployee(userId, employeeId, from.toEpochMilliseconds(), to.toEpochMilliseconds())
             .map { list -> list.map { it.toDomain() } }
     }
 
     override fun getLastPunch(employeeId: String): Flow<TimePunch?> {
-        return punchDao.getLastPunch(employeeId).map { it?.toDomain() }
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return punchDao.getLastPunch(userId, employeeId).map { it?.toDomain() }
     }
 
     override fun getAllPunches(from: Instant, to: Instant): Flow<List<TimePunch>> {
-        return punchDao.getAllPunches(from.toEpochMilliseconds(), to.toEpochMilliseconds())
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return punchDao.getAllPunches(userId, from.toEpochMilliseconds(), to.toEpochMilliseconds())
             .map { list -> list.map { it.toDomain() } }
     }
 
     override suspend fun recordPunch(punch: TimePunch): Result<Unit> = withContext(dispatcherProvider.io) {
+        val userId = sessionManager.currentUserId ?: return@withContext Result.failure(Exception("No user logged in"))
         try {
-            punchDao.insertPunch(punch.toEntity())
+            punchDao.insertPunch(punch.toEntity(userId))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -40,8 +48,9 @@ class PunchRepositoryImpl(
     }
 
     override suspend fun updatePunch(punch: TimePunch): Result<Unit> = withContext(dispatcherProvider.io) {
+        val userId = sessionManager.currentUserId ?: return@withContext Result.failure(Exception("No user logged in"))
         try {
-            punchDao.updatePunch(punch.toEntity())
+            punchDao.updatePunch(punch.toEntity(userId))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -49,7 +58,8 @@ class PunchRepositoryImpl(
     }
 
     override fun getTodayPunchCount(from: Instant, to: Instant): Flow<Int> {
-        return punchDao.getTodayPunchCount(from.toEpochMilliseconds(), to.toEpochMilliseconds())
+        val userId = sessionManager.currentUserId ?: return emptyFlow()
+        return punchDao.getTodayPunchCount(userId, from.toEpochMilliseconds(), to.toEpochMilliseconds())
     }
 }
 
@@ -65,9 +75,10 @@ fun PunchEntity.toDomain(): TimePunch {
     )
 }
 
-fun TimePunch.toEntity(): PunchEntity {
+fun TimePunch.toEntity(ownerUserId: String): PunchEntity {
     return PunchEntity(
         id = id,
+        ownerUserId = ownerUserId,
         employeeId = employeeId,
         timestamp = timestamp.toEpochMilliseconds(),
         type = type.name,
